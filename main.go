@@ -2,109 +2,222 @@ package main
 
 import (
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"github.com/tursodatabase/go-libsql"
 )
 
-type User struct {
-	Id  string
-	Name string
+func upsertInterests(tx *sql.Tx, userId string, interests []string) error {
+	if len(interests) == 0 {
+		return nil
+	}
+
+	stmt, err := tx.Prepare("INSERT INTO interests (user, interest) VALUES (?, ?)")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	for _, interest := range interests {
+		if _, err := stmt.Exec(userId, interest); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
-func userGetHandler(db *sql.DB) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		id := r.PathValue("id")
+type User struct {
+	Id          string      `json:"id"`
+	Name        string      `json:"name"`
+	Personality Personality `json:"personality"`
+	Interests   []string    `json:"interests"`
+}
+type Personality struct {
+	Extraversion      float64 `json:"extraversion"`
+	Agreeableness     float64 `json:"agreeableness"`
+	Conscientiousness float64 `json:"conscientiousness"`
+	Neuroticism       float64 `json:"neuroticism"`
+	Openness          float64 `json:"openness"`
+}
 
-		rows, err := db.Query("SELECT * FROM users WHERE id = ?", id)
+type PostUser struct {
+	Id          string      `param:"id"`
+	Name        string      `json:"name"`
+	Personality Personality `json:"personality"`
+	Interests   []string    `json:"interests"`
+}
+
+func postUser(db *sql.DB) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		user := PostUser{}
+
+		if err := c.Bind(&user); err != nil {
+			return echo.NewHTTPError(http.StatusUnprocessableEntity, "error parsing request body")
+		}
+
+		tx, err := db.Begin()
 
 		if err != nil {
-			fmt.Println(err)
-			return
+			return echo.NewHTTPError(http.StatusInternalServerError, "error starting transaction")
 		}
-		defer rows.Close()
+		defer tx.Rollback()
+
+		_, err = tx.Exec("INSERT INTO users (id, name) VALUES (?, ?)", user.Id, user.Name)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "error inserting user")
+		}
+
+		_, err = tx.Exec(
+			`INSERT INTO personalities (id, extraversion, agreeableness, conscientiousness, neuroticism, openness)
+			VALUES (?, ?, ?, ?, ?, ?)`,
+			user.Id, user.Personality.Extraversion, user.Personality.Agreeableness,
+			user.Personality.Conscientiousness, user.Personality.Neuroticism, user.Personality.Openness,
+		)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "error inserting personality")
+		}
+
+		if err := upsertInterests(tx, user.Id, user.Interests); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "error inserting interests")
+		}
+
+		if err := tx.Commit(); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "error committing transaction")
+		}
+
+		return c.NoContent(http.StatusCreated)
+
+	}
+}
+
+type UpdateUser struct {
+	Id          string       `param:"id"`
+	Name        *string      `json:"name"`
+	Personality *Personality `json:"personality"`
+	Interests   *[]string    `json:"interests"`
+}
+
+func updateUser(db *sql.DB) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		user := UpdateUser{}
+
+		if err := c.Bind(&user); err != nil {
+			return echo.NewHTTPError(http.StatusUnprocessableEntity, "error parsing request body")
+		}
+
+		tx, err := db.Begin()
+
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "error starting transaction")
+		}
+		defer tx.Rollback()
+
+		row := tx.QueryRow("SELECT id FROM users WHERE id = ?", user.Id)
+
+		var id string
+		if err := row.Scan(&id); err != nil {
+			if err == sql.ErrNoRows {
+				return echo.NewHTTPError(http.StatusNotFound, "user not found")
+			}
+			return echo.NewHTTPError(http.StatusInternalServerError, "error querying user")
+		}
+
+		if user.Name != nil {
+			_, err = tx.Exec("UPDATE users SET name = ? WHERE id = ?", user.Name, user.Id)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "error updating user")
+			}
+		}
+
+		if user.Personality != nil {
+			_, err = tx.Exec(
+				`UPDATE personalities
+			SET extraversion = ?, agreeableness = ?, conscientiousness = ?, neuroticism = ?, openness = ?
+			WHERE id = ?`,
+				user.Personality.Extraversion, user.Personality.Agreeableness,
+				user.Personality.Conscientiousness, user.Personality.Neuroticism, user.Personality.Openness, user.Id,
+			)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "error updating personality")
+			}
+		}
+
+		if user.Interests != nil {
+			_, err = tx.Exec("DELETE FROM interests WHERE user = ?", user.Id)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "error deleting interests")
+			}
+
+			if err := upsertInterests(tx, user.Id, *user.Interests); err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "error inserting interests")
+			}
+		}
+
+		if err := tx.Commit(); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "error committing transaction")
+		}
+
+		return c.NoContent(http.StatusOK)
+	}
+}
+
+type GetUser struct {
+	Id string `param:"id"`
+}
+
+func getUser(db *sql.DB) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		get_user := GetUser{}
+
+		if err := c.Bind(&get_user); err != nil {
+			return echo.NewHTTPError(http.StatusUnprocessableEntity, "error parsing request body")
+		}
+
+		row := db.QueryRow(
+			`SELECT u.id, u.name, p.extraversion, p.agreeableness, p.conscientiousness, p.neuroticism, p.openness
+        	FROM users u
+        	LEFT JOIN personalities p ON u.id = p.id
+        	WHERE u.id = ?`,
+			get_user.Id,
+		)
 
 		user := User{}
 
-		if !rows.Next() {
-			w.Write([]byte("User not found"))
-			return
-		}
-		if err := rows.Scan(&user.Id, &user.Name); err != nil {
-			fmt.Println("Error scanning row:", err)
-			return
+		if err := row.Scan(&user.Id, &user.Name, &user.Personality.Extraversion,
+			&user.Personality.Agreeableness, &user.Personality.Conscientiousness,
+			&user.Personality.Neuroticism, &user.Personality.Openness); err != nil {
+			if err == sql.ErrNoRows {
+				return echo.NewHTTPError(http.StatusNotFound, "user not found")
+			}
+			return echo.NewHTTPError(http.StatusInternalServerError, "error querying user")
 		}
 
-		res, err := json.Marshal(user)
-
+		rows, err := db.Query("SELECT interest FROM interests WHERE user = ?", user.Id)
 		if err != nil {
-			fmt.Println(err)
-			return
-		}
-
-		w.Write(res)
-
-	}
-}
-
-type Personality struct {
-	Id string
-	Extraversion float64
-	Agreeableness float64
-	Conscientiousness float64
-	Neuroticism float64
-	Openness float64
-}
-
-func personalityGetHandler(db *sql.DB) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		id := r.PathValue("id")
-
-		rows, err := db.Query("SELECT * FROM personalities WHERE id = ?", id)
-
-		if err != nil {
-			fmt.Println(err)
-			return
+			return echo.NewHTTPError(http.StatusInternalServerError, "error querying interests")
 		}
 		defer rows.Close()
 
-		personality := Personality{}
-
-		personality.Id = id
-
-		if !rows.Next() {
-			goto ret
+		var interests []string
+		for rows.Next() {
+			var interest string
+			if err := rows.Scan(&interest); err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "error scanning interests")
+			}
+			interests = append(interests, interest)
 		}
 
-		if err := rows.Scan(&personality.Id, &personality.Extraversion, &personality.Agreeableness, &personality.Conscientiousness, &personality.Neuroticism, &personality.Openness); err != nil {
-			fmt.Println("Error scanning row:", err)
-			return
-		}
+		user.Interests = interests
 
-		ret:
-
-		res, err := json.Marshal(personality)
-
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-
-		w.Write(res)
-
+		return c.JSON(http.StatusOK, user)
 	}
-
-}
-
-type pingHandler struct{}
-
-
-func (h *pingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("pong"))
 }
 
 func main() {
@@ -112,23 +225,23 @@ func main() {
 	dbName := "find-a-friend"
 	authToken := os.Getenv("DATABASE_TOKEN")
 	dir, err := os.MkdirTemp("", "libsql-*")
-    if err != nil {
-        fmt.Println("Error creating temporary directory:", err)
-        os.Exit(1)
-    }
-    defer os.RemoveAll(dir)
+	if err != nil {
+		fmt.Println("Error creating temporary directory:", err)
+		os.Exit(1)
+	}
+	defer os.RemoveAll(dir)
 
-    dbPath := filepath.Join(dir, dbName)
+	dbPath := filepath.Join(dir, dbName)
 
-    connector, err := libsql.NewEmbeddedReplicaConnector(dbPath, primaryUrl,
-        libsql.WithAuthToken(authToken),
-    )
-    if err != nil {
-        fmt.Println("Error creating connector:", err)
-        os.Exit(1)
-    }
-    defer connector.Close()
-
+	connector, err := libsql.NewEmbeddedReplicaConnector(dbPath, primaryUrl,
+		libsql.WithAuthToken(authToken),
+		libsql.WithSyncInterval(time.Minute),
+	)
+	if err != nil {
+		fmt.Println("Error creating connector:", err)
+		os.Exit(1)
+	}
+	defer connector.Close()
 
 	if err != nil {
 		fmt.Println(err)
@@ -139,21 +252,18 @@ func main() {
 	db := sql.OpenDB(connector)
 	defer db.Close()
 
-	mux := http.NewServeMux()
+	e := echo.New()
 
-	mux.Handle("/ping", &pingHandler{})
-	mux.Handle("/user/{id}", userGetHandler(db))
-	mux.Handle("/personality/{id}", personalityGetHandler(db))
-
+	e.Use(middleware.CORS())
+	e.POST("/user", postUser(db))
+	e.GET("/user/:id", getUser(db))
+	e.POST("/user/:id", updateUser(db))
 
 	fmt.Println("Starting server...")
-
 
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
-	http.ListenAndServe(":" + port, mux)
+	e.Logger.Fatal(e.Start(":" + port))
 }
-
-
