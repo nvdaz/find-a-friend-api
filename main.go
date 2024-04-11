@@ -80,6 +80,7 @@ func postUser(db *sql.DB) echo.HandlerFunc {
 			user.Id, user.Personality.Extraversion, user.Personality.Agreeableness,
 			user.Personality.Conscientiousness, user.Personality.Neuroticism, user.Personality.Openness,
 		)
+
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "error inserting personality")
 		}
@@ -220,6 +221,52 @@ func getUser(db *sql.DB) echo.HandlerFunc {
 	}
 }
 
+func getAllUsers(db *sql.DB) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		rows, err := db.Query(
+			`SELECT u.id, u.name, p.extraversion, p.agreeableness, p.conscientiousness, p.neuroticism, p.openness
+			FROM users u
+			LEFT JOIN personalities p ON u.id = p.id`,
+		)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "error querying users")
+		}
+		defer rows.Close()
+
+		users := []User{}
+		for rows.Next() {
+			user := User{}
+			if err := rows.Scan(&user.Id, &user.Name, &user.Personality.Extraversion,
+				&user.Personality.Agreeableness, &user.Personality.Conscientiousness,
+				&user.Personality.Neuroticism, &user.Personality.Openness); err != nil {
+				fmt.Println("Error scanning users in getAllUsers:", user.Id)
+				fmt.Println(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, "error scanning users")
+			}
+
+			rows, err := db.Query("SELECT interest FROM interests WHERE user = ?", user.Id)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "error querying interests")
+			}
+
+			var interests []string
+			for rows.Next() {
+				var interest string
+				if err := rows.Scan(&interest); err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, "error scanning interests")
+				}
+				interests = append(interests, interest)
+			}
+
+			user.Interests = interests
+			users = append(users, user)
+		}
+
+		return c.JSON(http.StatusOK, users)
+	}
+
+}
+
 func main() {
 	primaryUrl := os.Getenv("DATABASE_URL")
 	dbName := "find-a-friend"
@@ -258,6 +305,7 @@ func main() {
 	e.POST("/user", postUser(db))
 	e.GET("/user/:id", getUser(db))
 	e.POST("/user/:id", updateUser(db))
+	e.GET("/users", getAllUsers(db))
 
 	fmt.Println("Starting server...")
 
