@@ -13,19 +13,19 @@ import (
 	"github.com/tursodatabase/go-libsql"
 )
 
-func upsertInterests(tx *sql.Tx, userId string, interests []string) error {
+func upsertInterests(tx *sql.Tx, userId string, interests []Interest) error {
 	if len(interests) == 0 {
 		return nil
 	}
 
-	stmt, err := tx.Prepare("INSERT INTO interests (user, interest) VALUES (?, ?)")
+	stmt, err := tx.Prepare("INSERT INTO interests (user, interest, intensity, skill) VALUES (?, ?, ?, ?)")
 	if err != nil {
 		return err
 	}
 	defer stmt.Close()
 
 	for _, interest := range interests {
-		if _, err := stmt.Exec(userId, interest); err != nil {
+		if _, err := stmt.Exec(userId, interest.Interest, interest.Intensity, interest.Skill); err != nil {
 			return err
 		}
 	}
@@ -33,11 +33,17 @@ func upsertInterests(tx *sql.Tx, userId string, interests []string) error {
 	return nil
 }
 
+type Interest struct {
+	Interest  string  `json:"interest"`
+	Intensity float64 `json:"intensity"`
+	Skill     float64 `json:"skill"`
+}
+
 type User struct {
 	Id          string      `json:"id"`
 	Name        string      `json:"name"`
 	Personality Personality `json:"personality"`
-	Interests   []string    `json:"interests"`
+	Interests   []Interest  `json:"interests"`
 }
 type Personality struct {
 	Extraversion      float64 `json:"extraversion"`
@@ -51,7 +57,7 @@ type PostUser struct {
 	Id          string      `param:"id"`
 	Name        string      `json:"name"`
 	Personality Personality `json:"personality"`
-	Interests   []string    `json:"interests"`
+	Interests   []Interest  `json:"interests"`
 }
 
 func postUser(db *sql.DB) echo.HandlerFunc {
@@ -102,7 +108,7 @@ type UpdateUser struct {
 	Id          string       `param:"id"`
 	Name        *string      `json:"name"`
 	Personality *Personality `json:"personality"`
-	Interests   *[]string    `json:"interests"`
+	Interests   *[]Interest  `json:"interests"`
 }
 
 func updateUser(db *sql.DB) echo.HandlerFunc {
@@ -200,16 +206,16 @@ func getUser(db *sql.DB) echo.HandlerFunc {
 			return echo.NewHTTPError(http.StatusInternalServerError, "error querying user")
 		}
 
-		rows, err := db.Query("SELECT interest FROM interests WHERE user = ?", user.Id)
+		rows, err := db.Query("SELECT interest, intensity, skill FROM interests WHERE user = ?", user.Id)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "error querying interests")
 		}
 		defer rows.Close()
 
-		var interests []string
+		var interests []Interest
 		for rows.Next() {
-			var interest string
-			if err := rows.Scan(&interest); err != nil {
+			var interest Interest
+			if err := rows.Scan(&interest.Interest, &interest.Intensity, &interest.Skill); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "error scanning interests")
 			}
 			interests = append(interests, interest)
@@ -244,15 +250,16 @@ func getAllUsers(db *sql.DB) echo.HandlerFunc {
 				return echo.NewHTTPError(http.StatusInternalServerError, "error scanning users")
 			}
 
-			rows, err := db.Query("SELECT interest FROM interests WHERE user = ?", user.Id)
+			rows, err := db.Query("SELECT interest, intensity, skill FROM interests WHERE user = ?", user.Id)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "error querying interests")
 			}
+			defer rows.Close()
 
-			var interests []string
+			var interests []Interest
 			for rows.Next() {
-				var interest string
-				if err := rows.Scan(&interest); err != nil {
+				var interest Interest
+				if err := rows.Scan(&interest.Interest, &interest.Intensity, &interest.Skill); err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, "error scanning interests")
 				}
 				interests = append(interests, interest)

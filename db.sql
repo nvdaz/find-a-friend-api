@@ -16,5 +16,7 @@ CREATE TABLE IF NOT EXISTS `interests` (
     `id` INTEGER PRIMARY KEY AUTOINCREMENT,
     `user_id` VARCHAR(36),
     `interest` TEXT,
+    `intensity` FLOAT NOT NULL,
+    `skill` FLOAT NOT NULL,
     CONSTRAINT `unique_interest` UNIQUE (`user_id`, `interest`)
 )
