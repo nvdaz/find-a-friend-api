@@ -5,6 +5,7 @@ go 1.22.2
 require (
 	github.com/labstack/echo/v4 v4.11.4
 	github.com/tursodatabase/go-libsql v0.0.0-20240322134723-08771dcdd2f1
+	github.com/gorilla/websocket v1.5.1
 )
 
 require (
