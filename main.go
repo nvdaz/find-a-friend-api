@@ -6,6 +6,7 @@ import (
 
 	"github.com/nvdaz/find-a-friend-api/db"
 	"github.com/nvdaz/find-a-friend-api/handler"
+	"github.com/nvdaz/find-a-friend-api/service"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -20,7 +21,11 @@ func main() {
 	defer database.Close()
 
 	userStore := db.NewUserStore(database.Db)
-	h := handler.NewHandler(&userStore)
+	serviceConversationStore := db.NewServiceConversationStore(database.Db)
+	interestsStore := db.NewInterestsStore(database.Db)
+	userProfileStore := db.NewUserProfilesStore(database.Db)
+	userService := service.NewUserService(userStore, serviceConversationStore, interestsStore, userProfileStore)
+	h := handler.NewHandler(userService, &userStore, &serviceConversationStore)
 
 	e := echo.New()
 
@@ -28,8 +33,8 @@ func main() {
 	e.POST("/user", h.CreateUser)
 	e.GET("/user/:id", h.GetUser)
 	e.POST("/user/:id", h.UpdateUser)
-	e.GET("/users", h.GetAllUsers)
-	e.GET("/profile/:id", h.GetUserProfile)
+	e.POST("/service-conversations", h.CreateServiceConversations)
+	e.GET("/service-conversations/:id", h.GetServiceConversations)
 
 	fmt.Println("Starting server...")
 

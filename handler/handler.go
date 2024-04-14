@@ -2,12 +2,15 @@ package handler
 
 import (
 	"github.com/nvdaz/find-a-friend-api/db"
+	"github.com/nvdaz/find-a-friend-api/service"
 )
 
 type Handler struct {
-	userStore *db.UserStore
+	userService              service.UserService
+	userStore                *db.UserStore
+	serviceConversationStore *db.ServiceConversationStore
 }
 
-func NewHandler(userStore *db.UserStore) *Handler {
-	return &Handler{userStore}
+func NewHandler(userService service.UserService, userStore *db.UserStore, serviceConversationStore *db.ServiceConversationStore) *Handler {
+	return &Handler{userService, userStore, serviceConversationStore}
 }
