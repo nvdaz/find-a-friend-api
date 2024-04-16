@@ -13,9 +13,9 @@ func NewInterestsStore(db *sql.DB) InterestsStore {
 }
 
 type Interest struct {
-	Interest  string  `json:"interest"`
-	Intensity float64 `json:"intensity"`
-	Skill     float64 `json:"skill"`
+	Interest  string
+	Intensity float64
+	Skill     float64
 }
 
 func (store *InterestsStore) GetUserInterests(user_id string) ([]Interest, error) {

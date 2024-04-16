@@ -14,9 +14,9 @@ func NewUserStore(db *sql.DB) UserStore {
 }
 
 type User struct {
-	Id        string `json:"id"`
-	Name      string `json:"name"`
-	UpdatedAt string `json:"updated_at"`
+	Id        string
+	Name      string
+	UpdatedAt string
 }
 
 var ErrUserNotFound = errors.New("user not found")
@@ -46,4 +46,23 @@ func (store *UserStore) UpdateUser(user User) error {
 	_, err := store.db.Exec("UPDATE users SET name = ?, updated_at = ? WHERE id = ?", user.Name, user.UpdatedAt, user.Id)
 
 	return err
+}
+
+func (store *UserStore) GetAllUsers() ([]User, error) {
+	rows, err := store.db.Query("SELECT id, name, updated_at FROM users")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	users := []User{}
+	for rows.Next() {
+		user := User{}
+		if err := rows.Scan(&user.Id, &user.Name, &user.UpdatedAt); err != nil {
+			return nil, err
+		}
+		users = append(users, user)
+	}
+
+	return users, nil
 }

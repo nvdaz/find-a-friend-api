@@ -7,6 +7,19 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+const (
+	ModelGpt4         Model = "gpt4-new"
+	ModelGpt3p5       Model = "gpt3-5"
+	ModelClaudeHaiku  Model = "anthropic.claude-3-haiku-20240307-v1:0"
+	ModelClaudeSonnet Model = "anthropic.claude-3-sonnet-20240229-v1:0"
+)
+
+type Model string
+
+func (model Model) String() string {
+	return string(model)
+}
+
 func unmarshalResponse(result any, response string) error {
 	if len(response) > 8 && response[:8] == "```json\n" && response[len(response)-3:] == "```" {
 		response = response[8 : len(response)-3]
@@ -15,7 +28,13 @@ func unmarshalResponse(result any, response string) error {
 	return json.Unmarshal([]byte(response), &result)
 }
 
-type PromptData struct {
+type responseData struct {
+	Result string `json:"result"`
+	Grade  string `json:"grade"`
+	Model  string `json:"model"`
+}
+
+type promptData struct {
 	Action      string   `json:"action"`
 	Model       string   `json:"model"`
 	Prompt      string   `json:"prompt"`
@@ -23,13 +42,7 @@ type PromptData struct {
 	Temperature *float64 `json:"temperature"`
 }
 
-type ResponseData struct {
-	Result string `json:"result"`
-	Grade  string `json:"grade"`
-	Model  string `json:"model"`
-}
-
-func GetResponse(model, prompt, system string, temperature *float64) (*string, error) {
+func GetResponse(model Model, prompt, system string, temperature *float64) (*string, error) {
 	uri := os.Getenv("LLM_WEBSOCKET_URI")
 
 	conn, _, err := websocket.DefaultDialer.Dial(uri, nil)
@@ -38,9 +51,9 @@ func GetResponse(model, prompt, system string, temperature *float64) (*string, e
 	}
 	defer conn.Close()
 
-	requestData := PromptData{
+	requestData := promptData{
 		Action:      "runModel",
-		Model:       model,
+		Model:       model.String(),
 		Prompt:      prompt,
 		System:      system,
 		Temperature: temperature,
@@ -73,7 +86,7 @@ func GetResponse(model, prompt, system string, temperature *float64) (*string, e
 		}
 	}
 
-	responseData := ResponseData{}
+	responseData := responseData{}
 	err = json.Unmarshal(response, &responseData)
 	if err != nil {
 		return nil, err
@@ -82,7 +95,7 @@ func GetResponse(model, prompt, system string, temperature *float64) (*string, e
 	return &responseData.Result, nil
 }
 
-func GetResponseJson(result any, model, prompt, system string, temperature *float64) error {
+func GetResponseJson(result any, model Model, prompt, system string, temperature *float64) error {
 	retries := 2
 
 	var err error

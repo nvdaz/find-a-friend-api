@@ -25,7 +25,7 @@ func main() {
 	interestsStore := db.NewInterestsStore(database.Db)
 	userProfileStore := db.NewUserProfilesStore(database.Db)
 	userService := service.NewUserService(userStore, serviceConversationStore, interestsStore, userProfileStore)
-	h := handler.NewHandler(userService, &userStore, &serviceConversationStore)
+	h := handler.NewHandler(userService, &serviceConversationStore)
 
 	e := echo.New()
 
@@ -33,6 +33,7 @@ func main() {
 	e.POST("/user", h.CreateUser)
 	e.GET("/user/:id", h.GetUser)
 	e.POST("/user/:id", h.UpdateUser)
+	e.GET("/user/:id/matches", h.GetUserMatches)
 	e.POST("/service-conversations", h.CreateServiceConversations)
 	e.GET("/service-conversations/:id", h.GetServiceConversations)
 

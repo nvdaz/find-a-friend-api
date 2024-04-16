@@ -2,7 +2,6 @@ package db
 
 import (
 	"database/sql"
-	"log"
 )
 
 type ServiceConversationStore struct {
@@ -14,12 +13,12 @@ func NewServiceConversationStore(db *sql.DB) ServiceConversationStore {
 }
 
 type ServiceConversation struct {
-	Id        string `json:"id"`
-	UserId    string `json:"user_id"`
-	Question  string `json:"question"`
-	Answer    string `json:"answer"`
-	CreatedAt string `json:"created_at"`
-	IsKey     bool   `json:"is_key"`
+	Id        string
+	UserId    string
+	Question  string
+	Answer    string
+	CreatedAt string
+	IsKey     bool
 }
 
 func (store *ServiceConversationStore) GetRecentServiceConversations(userId string, limit int) ([]ServiceConversation, error) {
@@ -32,7 +31,6 @@ func (store *ServiceConversationStore) GetRecentServiceConversations(userId stri
 		userId, limit)
 
 	if err != nil {
-		log.Println(err)
 		return nil, err
 	}
 
@@ -43,7 +41,6 @@ func (store *ServiceConversationStore) GetRecentServiceConversations(userId stri
 		serviceConversation := ServiceConversation{}
 		if err := rows.Scan(&serviceConversation.Id, &serviceConversation.UserId, &serviceConversation.Question,
 			&serviceConversation.Answer, &serviceConversation.CreatedAt, &serviceConversation.IsKey); err != nil {
-			log.Println(err)
 			return nil, err
 		}
 		serviceConversations = append(serviceConversations, serviceConversation)

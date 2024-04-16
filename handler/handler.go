@@ -7,10 +7,9 @@ import (
 
 type Handler struct {
 	userService              service.UserService
-	userStore                *db.UserStore
 	serviceConversationStore *db.ServiceConversationStore
 }
 
-func NewHandler(userService service.UserService, userStore *db.UserStore, serviceConversationStore *db.ServiceConversationStore) *Handler {
-	return &Handler{userService, userStore, serviceConversationStore}
+func NewHandler(userService service.UserService, serviceConversationStore *db.ServiceConversationStore) *Handler {
+	return &Handler{userService, serviceConversationStore}
 }

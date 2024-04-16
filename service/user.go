@@ -2,10 +2,12 @@ package service
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/nvdaz/find-a-friend-api/db"
 	"github.com/nvdaz/find-a-friend-api/llm"
+	"github.com/nvdaz/find-a-friend-api/model"
 )
 
 type UserService struct {
@@ -19,33 +21,10 @@ func NewUserService(userStore db.UserStore, serviceConversationStore db.ServiceC
 	return UserService{userStore, serviceConversationStore, interestsStore, userDerivedStore}
 }
 
-type Personality struct {
-	Extroversion      float64 `json:"extroversion"`
-	Agreeableness     float64 `json:"agreeableness"`
-	Conscientiousness float64 `json:"conscientiousness"`
-	Neuroticism       float64 `json:"neuroticism"`
-	Openness          float64 `json:"openness"`
-}
-
-type Interest struct {
-	Interest  string  `json:"interest"`
-	Intensity float64 `json:"intensity"`
-	Skill     float64 `json:"skill"`
-}
-
-type User struct {
-	Id           string      `json:"id"`
-	Name         string      `json:"name"`
-	Bio          string      `json:"bio"`
-	Personality  Personality `json:"personality"`
-	Interests    []Interest  `json:"interests"`
-	KeyQuestions []string    `json:"key_questions"`
-}
-
-func buildUser(user *db.User, userProfile *db.UserProfile, interests []db.Interest, keyQuestions []db.ServiceConversation) User {
-	convertedInterests := []Interest{}
+func buildUser(user *db.User, userProfile *db.UserProfile, interests []db.Interest, keyQuestions []db.ServiceConversation) model.User {
+	convertedInterests := []model.Interest{}
 	for _, interest := range interests {
-		convertedInterests = append(convertedInterests, Interest(interest))
+		convertedInterests = append(convertedInterests, model.Interest(interest))
 	}
 
 	convertedKeyQuestions := []string{}
@@ -53,11 +32,11 @@ func buildUser(user *db.User, userProfile *db.UserProfile, interests []db.Intere
 		convertedKeyQuestions = append(convertedKeyQuestions, conversation.Question)
 	}
 
-	modelUser := User{
+	modelUser := model.User{
 		Id:           user.Id,
 		Name:         user.Name,
 		Bio:          userProfile.Bio,
-		Personality:  Personality(userProfile.Personality),
+		Personality:  model.Personality(userProfile.Personality),
 		Interests:    convertedInterests,
 		KeyQuestions: convertedKeyQuestions,
 	}
@@ -84,7 +63,7 @@ func needsUpdate(user *db.User, userProfile *db.UserProfile) bool {
 
 }
 
-func (service *UserService) GetUser(id string) (*User, error) {
+func (service *UserService) GetUser(id string) (*model.User, error) {
 	user, err := service.userStore.GetUser(id)
 	if err != nil {
 		return nil, err
@@ -126,8 +105,15 @@ func (service *UserService) GetUser(id string) (*User, error) {
 	if err != nil {
 		return nil, err
 	}
-	service.interestsStore.InsertUserInterests(id, interests)
-	fmt.Println("Interests", interests)
+
+	generalInterests, err := llm.ExtrapolateUserInterests(interests)
+	if err != nil {
+		return nil, err
+	}
+	log.Println("General Interests", generalInterests)
+
+	aggregateInterests := append(interests, generalInterests...)
+	service.interestsStore.InsertUserInterests(id, aggregateInterests)
 
 	personality, err := llm.GenerateUserPersonality(serviceConversations)
 	if err != nil {
@@ -136,19 +122,19 @@ func (service *UserService) GetUser(id string) (*User, error) {
 	userProfile.Personality = *personality
 	fmt.Println("Personality", personality)
 
-	bio, err := llm.GenerateUserBio(*user, *personality, interests)
+	bio, err := llm.GenerateUserBio(*user, *personality, aggregateInterests)
 	if err != nil {
 		return nil, err
 	}
 	userProfile.Bio = *bio
 	fmt.Println("Bio", bio)
 
-	key_conversations, err := llm.GenerateKeyServiceConversations(*user, serviceConversations)
+	keyConversations, err := llm.GenerateKeyServiceConversations(*user, serviceConversations)
 	if err != nil {
 		return nil, err
 	}
 
-	err = service.serviceConversationStore.UpdateKeyServiceConversations(id, key_conversations)
+	err = service.serviceConversationStore.UpdateKeyServiceConversations(id, keyConversations)
 	if err != nil {
 		return nil, err
 	}
@@ -164,7 +150,67 @@ func (service *UserService) GetUser(id string) (*User, error) {
 	}
 	fmt.Println("Key Conversations", keyServiceConversations)
 
-	modelUser := buildUser(user, userProfile, interests, keyServiceConversations)
+	modelUser := buildUser(user, userProfile, aggregateInterests, keyServiceConversations)
 
 	return &modelUser, nil
+}
+
+func (service *UserService) GetAllUsers() ([]model.User, error) {
+	userProfiles, err := service.userProfileStore.GetAllUserProfiles()
+	if err != nil {
+		return nil, err
+	}
+
+	users := []model.User{}
+
+	for _, userProfile := range userProfiles {
+		user, err := service.userStore.GetUser(userProfile.Id)
+		if err != nil {
+			return nil, err
+		}
+
+		keyServiceConversations, err := service.serviceConversationStore.GetKeyServiceConversations(userProfile.Id)
+		if err != nil {
+			return nil, err
+		}
+
+		interests, err := service.interestsStore.GetUserInterests(userProfile.Id)
+		if err != nil {
+			return nil, err
+		}
+
+		modelUser := buildUser(user, &userProfile, interests, keyServiceConversations)
+
+		users = append(users, modelUser)
+	}
+
+	return users, nil
+}
+
+func (service *UserService) GetBestMatch(userId string) (*model.Match, error) {
+	allUsers, err := service.GetAllUsers()
+	if err != nil {
+		return nil, err
+	}
+
+	user := model.User{}
+	users := []model.User{}
+	for _, tUser := range allUsers {
+		if tUser.Id != userId {
+			users = append(users, tUser)
+		} else {
+			user = tUser
+		}
+	}
+
+	if user.Id == "" {
+		return nil, nil
+	}
+
+	match, err := llm.GenerateUserBestMatch(user, users)
+	if err != nil {
+		return nil, err
+	}
+
+	return match, nil
 }

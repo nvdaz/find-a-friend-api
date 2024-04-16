@@ -14,18 +14,18 @@ func NewUserProfilesStore(db *sql.DB) UserProfilesStore {
 }
 
 type Personality struct {
-	Extroversion      float64 `json:"extroversion"`
-	Agreeableness     float64 `json:"agreeableness"`
-	Conscientiousness float64 `json:"conscientiousness"`
-	Neuroticism       float64 `json:"neuroticism"`
-	Openness          float64 `json:"openness"`
+	Extroversion      float64
+	Agreeableness     float64
+	Conscientiousness float64
+	Neuroticism       float64
+	Openness          float64
 }
 
 type UserProfile struct {
-	Id          string      `json:"id"`
-	Bio         string      `json:"bio"`
-	Personality Personality `json:"personality"`
-	UpdatedAt   string      `json:"updated_at"`
+	Id          string
+	Bio         string
+	Personality Personality
+	UpdatedAt   string
 }
 
 var ErrUserProfileNotFound = errors.New("user profile not found")
@@ -66,4 +66,26 @@ func (store *UserProfilesStore) InsertUserProfile(userProfile UserProfile) error
 		userProfile.Personality.Neuroticism, userProfile.Personality.Openness)
 
 	return err
+}
+
+func (store *UserProfilesStore) GetAllUserProfiles() ([]UserProfile, error) {
+	rows, err := store.db.Query("SELECT id, bio, extroversion, agreeableness, conscientiousness, neuroticism, openness, updated_at FROM user_profiles")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	userProfiles := []UserProfile{}
+	for rows.Next() {
+		userProfile := UserProfile{}
+		if err := rows.Scan(&userProfile.Id, &userProfile.Bio,
+			&userProfile.Personality.Extroversion, &userProfile.Personality.Agreeableness,
+			&userProfile.Personality.Conscientiousness, &userProfile.Personality.Neuroticism,
+			&userProfile.Personality.Openness, &userProfile.UpdatedAt); err != nil {
+			return nil, err
+		}
+		userProfiles = append(userProfiles, userProfile)
+	}
+
+	return userProfiles, nil
 }
