@@ -33,12 +33,18 @@ func (handler *Handler) GetAllUsers(c echo.Context) error {
 }
 
 func (handler *Handler) CreateUser(c echo.Context) error {
-	user := db.User{}
+	user := db.CreateUser{}
 	if err := c.Bind(&user); err != nil {
+		fmt.Println("Error parsing", err)
 		return echo.NewHTTPError(http.StatusUnprocessableEntity, "error parsing request body")
 	}
 
-	return c.NoContent(http.StatusNotImplemented)
+	if err := handler.userService.CreateUser(user); err != nil {
+		fmt.Println("Error creating", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "error creating user")
+	}
+
+	return c.NoContent(http.StatusCreated)
 }
 
 func (handler *Handler) UpdateUser(c echo.Context) error {

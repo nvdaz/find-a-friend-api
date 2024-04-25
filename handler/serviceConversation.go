@@ -20,6 +20,10 @@ func (handler *Handler) CreateServiceConversations(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "error creating service conversations")
 	}
 
+	for _, serviceConversation := range serviceConversations {
+		handler.userService.MarkUserAsUpdated(serviceConversation.UserId)
+	}
+
 	return c.NoContent(http.StatusCreated)
 }
 

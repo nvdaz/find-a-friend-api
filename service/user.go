@@ -44,6 +44,10 @@ func needsUpdate(user *db.User) bool {
 
 }
 
+func (service *UserService) MarkUserAsUpdated(id string) error {
+	return service.userStore.MarkUserAsUpdated(id)
+}
+
 func (service *UserService) GetUser(id string) (*model.User, error) {
 	user, err := service.userStore.GetUser(id)
 	if err != nil {
@@ -149,4 +153,8 @@ func (service *UserService) GetBestMatch(userId string) (*model.Match, error) {
 	}
 
 	return match, nil
+}
+
+func (service *UserService) CreateUser(createUser db.CreateUser) error {
+	return service.userStore.CreateUser(createUser)
 }

@@ -49,6 +49,12 @@ func (store *UserStore) CreateUser(createUser CreateUser) error {
 	return err
 }
 
+func (store *UserStore) MarkUserAsUpdated(id string) error {
+	_, err := store.db.Exec("UPDATE users SET updated_at = datetime('now') WHERE id = ?", id)
+
+	return err
+}
+
 func (store *UserStore) UpdateUser(user User) error {
 	_, err := store.db.Exec("UPDATE users SET name = ?, updated_at = ? WHERE id = ?", user.Name, user.UpdatedAt, user.Id)
 
