@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"fmt"
 )
 
 type ServiceConversationStore struct {
@@ -61,6 +62,7 @@ func (store *ServiceConversationStore) CreateServiceConversation(serviceConversa
 func (store *ServiceConversationStore) CreateServiceConversations(serviceConversations []ServiceConversation) error {
 	tx, err := store.db.Begin()
 	if err != nil {
+		fmt.Println("Error creating transaction", err)
 		return err
 	}
 	defer tx.Rollback()

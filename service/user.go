@@ -1,56 +1,37 @@
 package service
 
 import (
+	"encoding/json"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/nvdaz/find-a-friend-api/db"
-	"github.com/nvdaz/find-a-friend-api/llm"
+	"github.com/nvdaz/find-a-friend-api/llm/match"
+	"github.com/nvdaz/find-a-friend-api/llm/profile"
 	"github.com/nvdaz/find-a-friend-api/model"
 )
 
 type UserService struct {
 	userStore                db.UserStore
 	serviceConversationStore db.ServiceConversationStore
-	interestsStore           db.InterestsStore
-	userProfileStore         db.UserProfilesStore
 }
 
-func NewUserService(userStore db.UserStore, serviceConversationStore db.ServiceConversationStore, interestsStore db.InterestsStore, userDerivedStore db.UserProfilesStore) UserService {
-	return UserService{userStore, serviceConversationStore, interestsStore, userDerivedStore}
+func NewUserService(userStore db.UserStore, serviceConversationStore db.ServiceConversationStore) UserService {
+	return UserService{userStore, serviceConversationStore}
 }
 
-func buildUser(user *db.User, userProfile *db.UserProfile, interests []db.Interest, keyQuestions []db.ServiceConversation) model.User {
-	convertedInterests := []model.Interest{}
-	for _, interest := range interests {
-		convertedInterests = append(convertedInterests, model.Interest(interest))
-	}
-
-	convertedKeyQuestions := []string{}
-	for _, conversation := range keyQuestions {
-		convertedKeyQuestions = append(convertedKeyQuestions, conversation.Question)
-	}
-
-	modelUser := model.User{
-		Id:           user.Id,
-		Name:         user.Name,
-		Bio:          userProfile.Bio,
-		Personality:  model.Personality(userProfile.Personality),
-		Interests:    convertedInterests,
-		KeyQuestions: convertedKeyQuestions,
-	}
-
-	return modelUser
-}
-
-func needsUpdate(user *db.User, userProfile *db.UserProfile) bool {
+func needsUpdate(user *db.User) bool {
 	updated, err := time.Parse(time.RFC3339, user.UpdatedAt)
 	if err != nil {
 		return true
 	}
 
-	refreshed, err := time.Parse(time.RFC3339, userProfile.UpdatedAt)
+	if user.GeneratedAt == nil || user.Profile == nil {
+		return true
+
+	}
+
+	refreshed, err := time.Parse(time.RFC3339, *user.GeneratedAt)
 	if err != nil {
 		return true
 	}
@@ -68,32 +49,21 @@ func (service *UserService) GetUser(id string) (*model.User, error) {
 	if err != nil {
 		return nil, err
 	}
-	userProfile, err := service.userProfileStore.GetUserProfile(id)
-	if err != nil {
-		if err != db.ErrUserProfileNotFound {
-			return nil, err
-		}
 
-		err = nil
-		userProfile = &db.UserProfile{
-			Id: id,
-		}
-	}
-
-	if !needsUpdate(user, userProfile) {
-		keyServiceConversations, err := service.serviceConversationStore.GetKeyServiceConversations(id)
+	if !needsUpdate(user) {
+		profile := model.InternalProfile{}
+		err = json.Unmarshal([]byte(*user.Profile), &profile)
 		if err != nil {
 			return nil, err
 		}
 
-		interests, err := service.interestsStore.GetUserInterests(id)
-		if err != nil {
-			return nil, err
-		}
+		fmt.Println("Profile", profile)
 
-		modelUser := buildUser(user, userProfile, interests, keyServiceConversations)
-
-		return &modelUser, nil
+		return &model.User{
+			Id:      user.Id,
+			Name:    user.Name,
+			Profile: &profile,
+		}, nil
 	}
 
 	serviceConversations, err := service.serviceConversationStore.GetRecentServiceConversations(id, 100)
@@ -101,90 +71,56 @@ func (service *UserService) GetUser(id string) (*model.User, error) {
 		return nil, err
 	}
 
-	interests, err := llm.GenerateUserInterests(serviceConversations)
+	questions := make([]string, 0)
+	for _, conversation := range serviceConversations {
+		questions = append(questions, conversation.Question)
+	}
+
+	profile, err := profile.GenerateProfile(questions)
 	if err != nil {
 		return nil, err
 	}
 
-	generalInterests, err := llm.ExtrapolateUserInterests(interests)
-	if err != nil {
-		return nil, err
-	}
-	log.Println("General Interests", generalInterests)
-
-	aggregateInterests := append(interests, generalInterests...)
-	service.interestsStore.InsertUserInterests(id, aggregateInterests)
-
-	personality, err := llm.GenerateUserPersonality(serviceConversations)
-	if err != nil {
-		return nil, err
-	}
-	userProfile.Personality = *personality
-	fmt.Println("Personality", personality)
-
-	bio, err := llm.GenerateUserBio(*user, *personality, aggregateInterests)
-	if err != nil {
-		return nil, err
-	}
-	userProfile.Bio = *bio
-	fmt.Println("Bio", bio)
-
-	keyConversations, err := llm.GenerateKeyServiceConversations(*user, serviceConversations)
+	data, err := json.Marshal(profile)
 	if err != nil {
 		return nil, err
 	}
 
-	err = service.serviceConversationStore.UpdateKeyServiceConversations(id, keyConversations)
-	if err != nil {
-		return nil, err
-	}
+	service.userStore.UpdateUserProfile(id, string(data))
 
-	err = service.userProfileStore.InsertUserProfile(*userProfile)
-	if err != nil {
-		return nil, err
-	}
-
-	keyServiceConversations, err := service.serviceConversationStore.GetKeyServiceConversations(id)
-	if err != nil {
-		return nil, err
-	}
-	fmt.Println("Key Conversations", keyServiceConversations)
-
-	modelUser := buildUser(user, userProfile, aggregateInterests, keyServiceConversations)
-
-	return &modelUser, nil
+	return &model.User{
+		Id:      user.Id,
+		Name:    user.Name,
+		Profile: profile,
+	}, nil
 }
 
 func (service *UserService) GetAllUsers() ([]model.User, error) {
-	userProfiles, err := service.userProfileStore.GetAllUserProfiles()
+	users, err := service.userStore.GetAllUsers()
 	if err != nil {
 		return nil, err
 	}
 
-	users := []model.User{}
+	result := make([]model.User, 0)
+	for _, user := range users {
+		if user.Profile == nil {
+			continue
+		}
 
-	for _, userProfile := range userProfiles {
-		user, err := service.userStore.GetUser(userProfile.Id)
+		profile := model.InternalProfile{}
+		err = json.Unmarshal([]byte(*user.Profile), &profile)
 		if err != nil {
 			return nil, err
 		}
 
-		keyServiceConversations, err := service.serviceConversationStore.GetKeyServiceConversations(userProfile.Id)
-		if err != nil {
-			return nil, err
-		}
-
-		interests, err := service.interestsStore.GetUserInterests(userProfile.Id)
-		if err != nil {
-			return nil, err
-		}
-
-		modelUser := buildUser(user, &userProfile, interests, keyServiceConversations)
-
-		users = append(users, modelUser)
+		result = append(result, model.User{
+			Id:      user.Id,
+			Name:    user.Name,
+			Profile: &profile,
+		})
 	}
 
-	return users, nil
+	return result, nil
 }
 
 func (service *UserService) GetBestMatch(userId string) (*model.Match, error) {
@@ -207,7 +143,7 @@ func (service *UserService) GetBestMatch(userId string) (*model.Match, error) {
 		return nil, nil
 	}
 
-	match, err := llm.GenerateUserBestMatch(user, users)
+	match, err := match.GenerateMatch(user, users)
 	if err != nil {
 		return nil, err
 	}

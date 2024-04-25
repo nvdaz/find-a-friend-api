@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/nvdaz/find-a-friend-api/db"
@@ -11,6 +12,7 @@ import (
 func (handler *Handler) CreateServiceConversations(c echo.Context) error {
 	serviceConversations := make([]db.ServiceConversation, 0)
 	if err := c.Bind(&serviceConversations); err != nil {
+		fmt.Println("Error parsing", err)
 		return echo.NewHTTPError(http.StatusUnprocessableEntity, "error parsing request body")
 	}
 
@@ -23,7 +25,7 @@ func (handler *Handler) CreateServiceConversations(c echo.Context) error {
 
 func (handler *Handler) GetServiceConversations(c echo.Context) error {
 	id := c.Param("id")
-	serviceConversations, err := handler.serviceConversationStore.GetRecentServiceConversations(id, 20)
+	serviceConversations, err := handler.serviceConversationStore.GetRecentServiceConversations(id, 100)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, nil)
 	}

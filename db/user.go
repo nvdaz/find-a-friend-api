@@ -14,9 +14,11 @@ func NewUserStore(db *sql.DB) UserStore {
 }
 
 type User struct {
-	Id        string
-	Name      string
-	UpdatedAt string
+	Id          string
+	Name        string
+	UpdatedAt   string
+	Profile     *string
+	GeneratedAt *string
 }
 
 var ErrUserNotFound = errors.New("user not found")
@@ -24,9 +26,9 @@ var ErrUserNotFound = errors.New("user not found")
 func (store *UserStore) GetUser(id string) (*User, error) {
 	user := User{}
 
-	row := store.db.QueryRow("SELECT id, name, updated_at FROM users WHERE id = ?", id)
+	row := store.db.QueryRow("SELECT id, name, updated_at, profile, generated_at FROM users WHERE id = ?", id)
 
-	if err := row.Scan(&user.Id, &user.Name, &user.UpdatedAt); err != nil {
+	if err := row.Scan(&user.Id, &user.Name, &user.UpdatedAt, &user.Profile, &user.GeneratedAt); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, ErrUserNotFound
 		}
@@ -36,8 +38,13 @@ func (store *UserStore) GetUser(id string) (*User, error) {
 	return &user, nil
 }
 
-func (store *UserStore) CreateUser(user User) error {
-	_, err := store.db.Exec("INSERT INTO users (id, name, updated_at) VALUES (?, ?, ?)", user.Id, user.Name, user.UpdatedAt)
+type CreateUser struct {
+	Id   string
+	Name string
+}
+
+func (store *UserStore) CreateUser(createUser CreateUser) error {
+	_, err := store.db.Exec("INSERT INTO users (id, name, updated_at) VALUES (?, ?, datetime('now'))", createUser.Id, createUser.Name)
 
 	return err
 }
@@ -48,8 +55,14 @@ func (store *UserStore) UpdateUser(user User) error {
 	return err
 }
 
+func (store *UserStore) UpdateUserProfile(id string, profile string) error {
+	_, err := store.db.Exec("UPDATE users SET profile = ?, generated_at = datetime('now') WHERE id = ?", profile, id)
+
+	return err
+}
+
 func (store *UserStore) GetAllUsers() ([]User, error) {
-	rows, err := store.db.Query("SELECT id, name, updated_at FROM users")
+	rows, err := store.db.Query("SELECT id, name, updated_at, profile, generated_at FROM users")
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +71,7 @@ func (store *UserStore) GetAllUsers() ([]User, error) {
 	users := []User{}
 	for rows.Next() {
 		user := User{}
-		if err := rows.Scan(&user.Id, &user.Name, &user.UpdatedAt); err != nil {
+		if err := rows.Scan(&user.Id, &user.Name, &user.UpdatedAt, &user.Profile, &user.GeneratedAt); err != nil {
 			return nil, err
 		}
 		users = append(users, user)

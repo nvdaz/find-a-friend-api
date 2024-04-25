@@ -3,9 +3,10 @@ module github.com/nvdaz/find-a-friend-api
 go 1.22.2
 
 require (
+	github.com/gorilla/websocket v1.5.1
 	github.com/labstack/echo/v4 v4.11.4
 	github.com/tursodatabase/go-libsql v0.0.0-20240322134723-08771dcdd2f1
-	github.com/gorilla/websocket v1.5.1
+	golang.org/x/sync v0.6.0
 )
 
 require (

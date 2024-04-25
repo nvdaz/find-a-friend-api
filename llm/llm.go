@@ -2,6 +2,7 @@ package llm
 
 import (
 	"encoding/json"
+	"log"
 	"os"
 
 	"github.com/gorilla/websocket"
@@ -53,7 +54,7 @@ func GetResponse(model Model, prompt, system string, temperature *float64) (*str
 
 	requestData := promptData{
 		Action:      "runModel",
-		Model:       model.String(),
+		Model:       ModelClaudeSonnet.String(),
 		Prompt:      prompt,
 		System:      system,
 		Temperature: temperature,
@@ -101,7 +102,9 @@ func GetResponseJson(result any, model Model, prompt, system string, temperature
 	var err error
 
 	for i := 0; i < retries; i++ {
+		log.Println(system)
 		response, err := GetResponse(model, prompt, system, temperature)
+		log.Println(*response, err)
 		if err != nil {
 			continue
 		}

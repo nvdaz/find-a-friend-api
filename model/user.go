@@ -8,24 +8,134 @@ type Personality struct {
 	Openness          float64 `json:"openness"`
 }
 
-type Interest struct {
-	Interest  string  `json:"interest"`
-	Intensity float64 `json:"intensity"`
-	Skill     float64 `json:"skill"`
-}
-
 type User struct {
-	Id           string      `json:"id"`
-	Name         string      `json:"name"`
-	Bio          string      `json:"bio"`
-	Personality  Personality `json:"personality"`
-	Interests    []Interest  `json:"interests"`
-	KeyQuestions []string    `json:"key_questions"`
+	Id      string           `json:"id"`
+	Name    string           `json:"name"`
+	Profile *InternalProfile `json:"profile"`
 }
 
 type Match struct {
-	Id       string  `json:"id"`
-	UserId   string  `json:"user_id"`
-	Affinity float64 `json:"affinity"`
-	Reason   string  `json:"reason"`
+	User   User   `json:"user"`
+	Reason string `json:"reason"`
+}
+
+type Interest struct {
+	Interest string  `json:"interest"`
+	Level    float64 `json:"level"`
+}
+
+type Skill struct {
+	Skill string  `json:"skill"`
+	Level float64 `json:"level"`
+}
+
+type Goal struct {
+	Goal       string  `json:"goal"`
+	Importance float64 `json:"importance"`
+}
+
+type CoreValue struct {
+	Value      string  `json:"value"`
+	Importance float64 `json:"importance"`
+}
+
+type MediaInterest struct {
+	MediaInterest string  `json:"media_interest"`
+	Level         float64 `json:"level"`
+}
+
+type Background struct {
+	Occupation string `json:"occupation"`
+	Education  string `json:"education"`
+}
+
+type Tag struct {
+	Tag   string `json:"tag"`
+	Emoji string `json:"emoji"`
+}
+
+type IntermediateProfile struct {
+	Interests                []Interest          `json:"interests"`
+	Personality              Personality         `json:"personality"`
+	Skills                   []Skill             `json:"skills"`
+	Goals                    []Goal              `json:"goals"`
+	Values                   []CoreValue         `json:"values"`
+	Demographics             Demographics        `json:"demographics"`
+	LivedExperiences         []string            `json:"lived_experiences"`
+	Habits                   []string            `json:"habits"`
+	InterpersonalSkills      InterpersonalSkills `json:"interpersonal_skills"`
+	ExceptionalCircumstances []string            `json:"exceptional_circumstances"`
+}
+
+type Demographics struct {
+	AgeRange             string   `json:"age_range"`
+	Gender               string   `json:"gender"`
+	Occupation           string   `json:"occupation"`
+	HighestEducation     string   `json:"highest_education"`
+	LivingStatus         string   `json:"living_status"`
+	PoliticalAffiliation string   `json:"political_affiliation"`
+	ReligiousAffiliation string   `json:"religious_affiliation"`
+	Nationality          string   `json:"nationality"`
+	SpokenLanguages      []string `json:"spoken_languages"`
+	SocialClass          string   `json:"social_class"`
+}
+
+type InterpersonalSkills struct {
+	ActiveListening float64 `json:"active_listening"`
+	Teamwork        float64 `json:"teamwork"`
+	Responsibility  float64 `json:"responsibility"`
+	Dependability   float64 `json:"dependability"`
+	Leadership      float64 `json:"leadership"`
+	Motivation      float64 `json:"motivation"`
+	Flexibility     float64 `json:"flexibility"`
+	Patience        float64 `json:"patience"`
+	Empathy         float64 `json:"empathy"`
+}
+
+type NonSecretIntermediateProfile struct {
+	Interests           []Interest          `json:"interests"`
+	Personality         Personality         `json:"personality"`
+	Skills              []Skill             `json:"skills"`
+	Goals               []Goal              `json:"goals"`
+	Values              []CoreValue         `json:"values"`
+	LivedExperiences    []string            `json:"lived_experiences"`
+	Habits              []string            `json:"habits"`
+	InterpersonalSkills InterpersonalSkills `json:"interpersonal_skills"`
+}
+
+func NewNonSecretIntermediateProfile(intermediateProfile *IntermediateProfile) *NonSecretIntermediateProfile {
+	return &NonSecretIntermediateProfile{
+		Interests:           intermediateProfile.Interests,
+		Personality:         intermediateProfile.Personality,
+		Skills:              intermediateProfile.Skills,
+		Goals:               intermediateProfile.Goals,
+		Values:              intermediateProfile.Values,
+		LivedExperiences:    intermediateProfile.LivedExperiences,
+		Habits:              intermediateProfile.Habits,
+		InterpersonalSkills: intermediateProfile.InterpersonalSkills,
+	}
+}
+
+type ProfileFeatures struct {
+	Summary      string   `json:"summary"`
+	Tags         []Tag    `json:"tags"`
+	Bio          string   `json:"bio"`
+	KeyQuestions []string `json:"key_questions"`
+}
+
+type InternalProfile struct {
+	Interests                []Interest          `json:"interests"`
+	Personality              Personality         `json:"personality"`
+	Skills                   []Skill             `json:"skills"`
+	Goals                    []Goal              `json:"goals"`
+	Values                   []CoreValue         `json:"values"`
+	Demographics             Demographics        `json:"demographics"`
+	LivedExperiences         []string            `json:"lived_experiences"`
+	Habits                   []string            `json:"habits"`
+	InterpersonalSkills      InterpersonalSkills `json:"interpersonal_skills"`
+	ExceptionalCircumstances []string            `json:"exceptional_circumstances"`
+	Summary                  string              `json:"summary"`
+	Tags                     []Tag               `json:"tags"`
+	Bio                      string              `json:"bio"`
+	KeyQuestions             []string            `json:"key_questions"`
 }
