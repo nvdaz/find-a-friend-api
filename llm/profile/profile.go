@@ -24,7 +24,7 @@ func GenerateProfile(questions []string) (*model.InternalProfile, error) {
 
 	nonSecretProfile := model.NewNonSecretIntermediateProfile(intermediateProfile)
 
-	features, err := generateUserFeatures(nonSecretProfile)
+	features, err := generateUserFeatures(*nonSecretProfile, string(data))
 	if err != nil {
 		return nil, err
 	}

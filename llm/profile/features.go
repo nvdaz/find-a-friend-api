@@ -17,7 +17,7 @@ const (
 	UserKeyQuestionsCount = 3
 )
 
-func generateUserBio(user *model.NonSecretIntermediateProfile) (string, error) {
+func generateUserBio(user model.NonSecretIntermediateProfile) (string, error) {
 	profileString, err := json.Marshal(user)
 	if err != nil {
 		return "", err
@@ -35,8 +35,15 @@ func generateUserBio(user *model.NonSecretIntermediateProfile) (string, error) {
 	return result.Bio, nil
 }
 
-func generateUserKeyQuestions(user *model.NonSecretIntermediateProfile) ([]string, error) {
-	profileString, err := json.Marshal(user)
+func generateUserKeyQuestions(user model.NonSecretIntermediateProfile, questions string) ([]string, error) {
+	prompt := struct {
+		User      model.NonSecretIntermediateProfile `json:"user"`
+		Questions string                             `json:"questions"`
+	}{
+		User:      user,
+		Questions: questions,
+	}
+	data, err := json.Marshal(prompt)
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +52,7 @@ func generateUserKeyQuestions(user *model.NonSecretIntermediateProfile) ([]strin
 		Questions []string `json:"key_questions"`
 	}{}
 
-	err = llm.GetResponseJson(&result, llm.ModelGpt4, string(profileString), fmt.Sprintf("Create a list of %d key questions that the user has already asked the chat bot that are representative of their interests and selected to spark conversation. Provide a JSON object without any formatting containing a single key: 'key_questions', with the value being a list of the questions.", UserKeyQuestionsCount), nil)
+	err = llm.GetResponseJson(&result, llm.ModelGpt4, string(data), fmt.Sprintf("Create a list of %d key questions that the user has already asked the chat bot that are representative of their interests and selected to spark conversation. Provide a JSON object without any formatting containing a single key: 'key_questions', with the value being a list of the questions.", UserKeyQuestionsCount), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -53,7 +60,7 @@ func generateUserKeyQuestions(user *model.NonSecretIntermediateProfile) ([]strin
 	return result.Questions, nil
 }
 
-func generateUserTags(user *model.NonSecretIntermediateProfile) ([]model.Tag, error) {
+func generateUserTags(user model.NonSecretIntermediateProfile) ([]model.Tag, error) {
 	profileString, err := json.Marshal(user)
 	if err != nil {
 		return nil, err
@@ -71,7 +78,7 @@ func generateUserTags(user *model.NonSecretIntermediateProfile) ([]model.Tag, er
 	return result.Tags, nil
 }
 
-func generateUserSummary(user *model.NonSecretIntermediateProfile) (string, error) {
+func generateUserSummary(user model.NonSecretIntermediateProfile) (string, error) {
 	profileString, err := json.Marshal(user)
 	if err != nil {
 		return "", err
@@ -90,7 +97,7 @@ func generateUserSummary(user *model.NonSecretIntermediateProfile) (string, erro
 
 }
 
-func generateUserFeatures(user *model.NonSecretIntermediateProfile) (*model.ProfileFeatures, error) {
+func generateUserFeatures(user model.NonSecretIntermediateProfile, questions string) (*model.ProfileFeatures, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	group, _ := errgroup.WithContext(ctx)
 
@@ -131,7 +138,7 @@ func generateUserFeatures(user *model.NonSecretIntermediateProfile) (*model.Prof
 		sem.Acquire(ctx, 1)
 		defer sem.Release(1)
 
-		keyQuestions, err = generateUserKeyQuestions(user)
+		keyQuestions, err = generateUserKeyQuestions(user, questions)
 		return err
 	})
 
@@ -140,7 +147,7 @@ func generateUserFeatures(user *model.NonSecretIntermediateProfile) (*model.Prof
 	}
 
 	return &model.ProfileFeatures{
-		Summary: summary,
+		Summary:      summary,
 		Tags:         tags,
 		Bio:          bio,
 		KeyQuestions: keyQuestions,
