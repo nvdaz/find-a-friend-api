@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/nvdaz/find-a-friend-api/db"
-	"github.com/nvdaz/find-a-friend-api/llm/match"
 	"github.com/nvdaz/find-a-friend-api/llm/profile"
 	"github.com/nvdaz/find-a-friend-api/model"
 )
@@ -125,34 +124,6 @@ func (service *UserService) GetAllUsers() ([]model.User, error) {
 	}
 
 	return result, nil
-}
-
-func (service *UserService) GetBestMatch(userId string) (*model.Match, error) {
-	allUsers, err := service.GetAllUsers()
-	if err != nil {
-		return nil, err
-	}
-
-	user := model.User{}
-	users := []model.User{}
-	for _, tUser := range allUsers {
-		if tUser.Id != userId {
-			users = append(users, tUser)
-		} else {
-			user = tUser
-		}
-	}
-
-	if user.Id == "" {
-		return nil, nil
-	}
-
-	match, err := match.GenerateMatch(user, users)
-	if err != nil {
-		return nil, err
-	}
-
-	return match, nil
 }
 
 func (service *UserService) CreateUser(createUser db.CreateUser) error {

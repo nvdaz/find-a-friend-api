@@ -13,11 +13,11 @@ import (
 )
 
 const (
-	UserTagsCount         = 8
+	UserTagsCount         = 4
 	UserKeyQuestionsCount = 3
 )
 
-func generateUserBio(user model.NonSecretIntermediateProfile) (string, error) {
+func generateUserBio(user model.IntermediateProfile) (string, error) {
 	profileString, err := json.Marshal(user)
 	if err != nil {
 		return "", err
@@ -27,7 +27,7 @@ func generateUserBio(user model.NonSecretIntermediateProfile) (string, error) {
 		Bio string `json:"bio"`
 	}{}
 
-	err = llm.GetResponseJson(&result, llm.ModelGpt4, string(profileString), "Create a short, passionate introductory biography from the perspective of the provided user using personal pronouns. Include a brief description of their personality and interests. The biography should be a single paragraph, no more than 200 words in length. Provide a JSON object without any formatting containing two keys: 'bio', with the value being the biography.", nil)
+	err = llm.GetResponseJson(&result, llm.ModelGpt4, string(profileString), "Create a short, passionate introductory biography in a casual, friendly tone from the perspective of the provided user using personal pronouns. Include a brief description of their personality and interests. The biography should be a single paragraph, no more than 200 words in length. Provide a JSON object without any formatting containing two keys: 'bio', with the value being the biography.", nil)
 	if err != nil {
 		return "", err
 	}
@@ -35,10 +35,10 @@ func generateUserBio(user model.NonSecretIntermediateProfile) (string, error) {
 	return result.Bio, nil
 }
 
-func generateUserKeyQuestions(user model.NonSecretIntermediateProfile, questions string) ([]string, error) {
+func generateUserKeyQuestions(user model.IntermediateProfile, questions string) ([]string, error) {
 	prompt := struct {
-		User      model.NonSecretIntermediateProfile `json:"user"`
-		Questions string                             `json:"questions"`
+		User      model.IntermediateProfile `json:"user"`
+		Questions string                    `json:"questions"`
 	}{
 		User:      user,
 		Questions: questions,
@@ -60,7 +60,7 @@ func generateUserKeyQuestions(user model.NonSecretIntermediateProfile, questions
 	return result.Questions, nil
 }
 
-func generateUserTags(user model.NonSecretIntermediateProfile) ([]model.Tag, error) {
+func generateUserTags(user model.IntermediateProfile) ([]model.Tag, error) {
 	profileString, err := json.Marshal(user)
 	if err != nil {
 		return nil, err
@@ -70,7 +70,7 @@ func generateUserTags(user model.NonSecretIntermediateProfile) ([]model.Tag, err
 		Tags []model.Tag `json:"tags"`
 	}{}
 
-	err = llm.GetResponseJson(&result, llm.ModelGpt4, string(profileString), fmt.Sprintf("Create a list of %d short tags that describe the user. The tags should be representative of their interests and personality. Provide a JSON object without any formatting containing a single key: 'tags', with the value being a list of tags. Each tag should have a key 'tag' with the tag name and a key 'emoji' with an emoji to accompany it.", UserTagsCount), nil)
+	err = llm.GetResponseJson(&result, llm.ModelGpt4, string(profileString), fmt.Sprintf("Create a list of %d short tags that describe the user. The tags should be representative of who they are, but not restating what is already given (for example: analytical thinker, in college, ethical innovator). Provide a JSON object without any formatting containing a single key: 'tags', with the value being a list of tags. Each tag should have a key 'tag' with the tag name and a key 'emoji' with a single emoji to accompany it.", UserTagsCount), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +78,7 @@ func generateUserTags(user model.NonSecretIntermediateProfile) ([]model.Tag, err
 	return result.Tags, nil
 }
 
-func generateUserSummary(user model.NonSecretIntermediateProfile) (string, error) {
+func generateUserSummary(user model.IntermediateProfile) (string, error) {
 	profileString, err := json.Marshal(user)
 	if err != nil {
 		return "", err
@@ -88,16 +88,52 @@ func generateUserSummary(user model.NonSecretIntermediateProfile) (string, error
 		Summary string `json:"summary"`
 	}{}
 
-	err = llm.GetResponseJson(&result, llm.ModelGpt4, string(profileString), "Create a short summary of the user's profile including only the most important information about them. The summary should be no more than 200 words in length. Provide a JSON object without any formatting containing a single key: 'summary', with the value being the summary.", nil)
+	err = llm.GetResponseJson(&result, llm.ModelGpt4, string(profileString), "Create a short summary in a casual, friendly tone of the user's profile including only the most important information about them. The summary should be no more than 200 words in length. Provide a JSON object without any formatting containing a single key: 'summary', with the value being the summary.", nil)
 	if err != nil {
 		return "", err
 	}
 
 	return result.Summary, nil
+}
+
+func generateUserSubtitle(user model.IntermediateProfile) (string, error) {
+	profileString, err := json.Marshal(user)
+	if err != nil {
+		return "", err
+	}
+
+	result := struct {
+		Subtitle string `json:"subtitle"`
+	}{}
+
+	err = llm.GetResponseJson(&result, llm.ModelGpt4, string(profileString), "Create a 2-6 word creative subtitle in a casual, friendly tone to go under the user's name under their profile that captures the essence of their personality. Be as unique and creative as possible. Dive into what cannot be immediately seen just by their profile. Provide a JSON object without any formatting containing a single key: 'subtitle', with the value being the subtitle", nil)
+	if err != nil {
+		return "", err
+	}
+
+	return result.Subtitle, nil
+}
+
+func generateUserLookingFor(user model.IntermediateProfile) (string, error) {
+	profileString, err := json.Marshal(user)
+	if err != nil {
+		return "", err
+	}
+
+	result := struct {
+		LookingFor string `json:"looking_for"`
+	}{}
+
+	err = llm.GetResponseJson(&result, llm.ModelGpt4, string(profileString), "Create a short, creative description (about 10-15 words) that expresses the kind of friend the user is looing for (for example: Like-minded girlfriends to share a love of books and coffee). Be as unique and creative as possible. Dive into what cannot be immediately seen just by their profile. Provide a JSON object without any formatting containing a single key: 'looking_for', with the value being the description.", nil)
+	if err != nil {
+		return "", err
+	}
+
+	return result.LookingFor, nil
 
 }
 
-func generateUserFeatures(user model.NonSecretIntermediateProfile, questions string) (*model.ProfileFeatures, error) {
+func generateUserFeatures(user model.IntermediateProfile, questions string) (*model.ProfileFeatures, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	group, _ := errgroup.WithContext(ctx)
 
@@ -108,6 +144,8 @@ func generateUserFeatures(user model.NonSecretIntermediateProfile, questions str
 	var tags []model.Tag
 	var bio string
 	var keyQuestions []string
+	var subtitle string
+	var lookingFor string
 	var err error
 
 	group.Go(func() error {
@@ -142,6 +180,22 @@ func generateUserFeatures(user model.NonSecretIntermediateProfile, questions str
 		return err
 	})
 
+	group.Go(func() error {
+		sem.Acquire(ctx, 1)
+		defer sem.Release(1)
+
+		subtitle, err = generateUserSubtitle(user)
+		return err
+	})
+
+	group.Go(func() error {
+		sem.Acquire(ctx, 1)
+		defer sem.Release(1)
+
+		lookingFor, err = generateUserLookingFor(user)
+		return err
+	})
+
 	if err := group.Wait(); err != nil {
 		return nil, err
 	}
@@ -151,5 +205,7 @@ func generateUserFeatures(user model.NonSecretIntermediateProfile, questions str
 		Tags:         tags,
 		Bio:          bio,
 		KeyQuestions: keyQuestions,
+		Subtitle:     subtitle,
+		LookingFor:   lookingFor,
 	}, nil
 }

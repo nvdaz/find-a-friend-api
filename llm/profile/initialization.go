@@ -18,10 +18,11 @@ const (
 	UserValuesCount      = 3
 	UserExperiencesCount = 3
 	UserHabitsCount      = 3
+	UserHobbiesCount     = 5
 )
 
 func initializeInterests(questions string) ([]model.Interest, error) {
-	system := fmt.Sprintf("Create a list of interests based on the provided chatbot questions. The list should contain %d specific interests. Provide a JSON object without any formatting containing the key 'interests', with the value being the list of interests. The interests should be objects with a key 'interest' containing the interest and a key 'level' containing the interest level on a scale of 0 to 1.", UserInterestsCount)
+	system := fmt.Sprintf("Create a list of interests based on the provided chatbot questions. The list should contain %d specific interests. Provide a JSON object without any formatting containing the key 'interests', with the value being the list of interests. The interests should be objects with a key 'interest' containing the interest, a key 'level' containing the interest level on a scale of 0 to 1, and a key 'emoji' with a single, relevant emoji.", UserInterestsCount)
 
 	result := struct {
 		Interests []model.Interest `json:"interests"`
@@ -136,6 +137,20 @@ func initializeHabits(questions string) ([]string, error) {
 	return result.Habits, nil
 }
 
+func initializeHobbies(questions string) ([]string, error) {
+	system := fmt.Sprintf("Create a list of %d specific hobbies that the user does for fun in the form of verb phrases based on the provided chatbot questions. Provide a JSON object without any formatting containing the key 'hobbies', with the value being the list of hobbies.", UserHobbiesCount)
+
+	result := struct {
+		Hobbies []string `json:"hobbies"`
+	}{}
+	if err := llm.GetResponseJson(&result, llm.ModelGpt3p5, questions, system, nil); err != nil {
+		return nil, err
+	}
+
+	return result.Hobbies, nil
+
+}
+
 func initializeInterpersonalSkills(questions string) (model.InterpersonalSkills, error) {
 	system := "Analyze the user's responses to determine their interpersonal skills. Provide a JSON object without any formatting containing the keys 'active_listening', 'teamwork', 'responsibility', 'dependability', 'leadership', 'motivation', 'flexibility', 'patience', and 'empathy'. Each key should have a value between 0 and 1, representing the strength of the skill."
 
@@ -177,6 +192,7 @@ func initializeProfile(questions string) (*model.IntermediateProfile, error) {
 	var livedExperiences []string
 	var interpersonalSkills model.InterpersonalSkills
 	var habits []string
+	var hobbies []string
 	var exceptionalCircumstances []string
 	var err error
 
@@ -246,6 +262,13 @@ func initializeProfile(questions string) (*model.IntermediateProfile, error) {
 	group.Go(func() error {
 		sem.Acquire(ctx, 1)
 		defer sem.Release(1)
+		hobbies, err = initializeHobbies(questions)
+		return err
+	})
+
+	group.Go(func() error {
+		sem.Acquire(ctx, 1)
+		defer sem.Release(1)
 		exceptionalCircumstances, err = initializeExceptionalCircumstances(questions)
 		return err
 	})
@@ -263,6 +286,7 @@ func initializeProfile(questions string) (*model.IntermediateProfile, error) {
 		Demographics:             demographics,
 		LivedExperiences:         livedExperiences,
 		Habits:                   habits,
+		Hobbies:                  hobbies,
 		InterpersonalSkills:      interpersonalSkills,
 		ExceptionalCircumstances: exceptionalCircumstances,
 	}, nil

@@ -14,14 +14,10 @@ type User struct {
 	Profile *InternalProfile `json:"profile"`
 }
 
-type Match struct {
-	User   User   `json:"user"`
-	Reason string `json:"reason"`
-}
-
 type Interest struct {
 	Interest string  `json:"interest"`
 	Level    float64 `json:"level"`
+	Emoji    string  `json:"emoji"`
 }
 
 type Skill struct {
@@ -63,6 +59,7 @@ type IntermediateProfile struct {
 	Demographics             Demographics        `json:"demographics"`
 	LivedExperiences         []string            `json:"lived_experiences"`
 	Habits                   []string            `json:"habits"`
+	Hobbies                  []string            `json:"hobbies"`
 	InterpersonalSkills      InterpersonalSkills `json:"interpersonal_skills"`
 	ExceptionalCircumstances []string            `json:"exceptional_circumstances"`
 }
@@ -92,35 +89,13 @@ type InterpersonalSkills struct {
 	Empathy         float64 `json:"empathy"`
 }
 
-type NonSecretIntermediateProfile struct {
-	Interests           []Interest          `json:"interests"`
-	Personality         Personality         `json:"personality"`
-	Skills              []Skill             `json:"skills"`
-	Goals               []Goal              `json:"goals"`
-	Values              []CoreValue         `json:"values"`
-	LivedExperiences    []string            `json:"lived_experiences"`
-	Habits              []string            `json:"habits"`
-	InterpersonalSkills InterpersonalSkills `json:"interpersonal_skills"`
-}
-
-func NewNonSecretIntermediateProfile(intermediateProfile *IntermediateProfile) *NonSecretIntermediateProfile {
-	return &NonSecretIntermediateProfile{
-		Interests:           intermediateProfile.Interests,
-		Personality:         intermediateProfile.Personality,
-		Skills:              intermediateProfile.Skills,
-		Goals:               intermediateProfile.Goals,
-		Values:              intermediateProfile.Values,
-		LivedExperiences:    intermediateProfile.LivedExperiences,
-		Habits:              intermediateProfile.Habits,
-		InterpersonalSkills: intermediateProfile.InterpersonalSkills,
-	}
-}
-
 type ProfileFeatures struct {
 	Summary      string   `json:"summary"`
 	Tags         []Tag    `json:"tags"`
 	Bio          string   `json:"bio"`
 	KeyQuestions []string `json:"key_questions"`
+	Subtitle     string   `json:"subtitle"`
+	LookingFor   string   `json:"looking_for"`
 }
 
 type InternalProfile struct {
@@ -132,10 +107,13 @@ type InternalProfile struct {
 	Demographics             Demographics        `json:"demographics"`
 	LivedExperiences         []string            `json:"lived_experiences"`
 	Habits                   []string            `json:"habits"`
+	Hobbies                  []string            `json:"hobbies"`
 	InterpersonalSkills      InterpersonalSkills `json:"interpersonal_skills"`
 	ExceptionalCircumstances []string            `json:"exceptional_circumstances"`
 	Summary                  string              `json:"summary"`
 	Tags                     []Tag               `json:"tags"`
 	Bio                      string              `json:"bio"`
 	KeyQuestions             []string            `json:"key_questions"`
+	Subtitle                 string              `json:"subtitle"`
+	LookingFor               string              `json:"looking_for"`
 }

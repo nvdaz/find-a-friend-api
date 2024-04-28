@@ -97,7 +97,7 @@ func GetResponse(model Model, prompt, system string, temperature *float64) (*str
 }
 
 func GetResponseJson(result any, model Model, prompt, system string, temperature *float64) error {
-	retries := 2
+	retries := 3
 
 	var err error
 

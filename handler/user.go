@@ -50,13 +50,3 @@ func (handler *Handler) CreateUser(c echo.Context) error {
 func (handler *Handler) UpdateUser(c echo.Context) error {
 	return c.NoContent(http.StatusNotImplemented)
 }
-
-func (handler *Handler) GetUserMatches(c echo.Context) error {
-	matches, err := handler.userService.GetBestMatch(c.Param("id"))
-
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "error getting matches")
-	}
-
-	return c.JSON(http.StatusOK, matches)
-}

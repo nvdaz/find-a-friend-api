@@ -20,10 +20,12 @@ func main() {
 	}
 	defer database.Close()
 
-	userStore := db.NewUserStore(database.Db)
-	serviceConversationStore := db.NewServiceConversationStore(database.Db)
+	userStore := db.NewUserStore(database)
+	serviceConversationStore := db.NewServiceConversationStore(database)
+	matchStore := db.NewMatchStore(database)
 	userService := service.NewUserService(userStore, serviceConversationStore)
-	h := handler.NewHandler(userService, &serviceConversationStore)
+	matchService := service.NewMatchService(userService, matchStore)
+	h := handler.NewHandler(userService, matchService, &serviceConversationStore)
 
 	e := echo.New()
 
@@ -31,7 +33,8 @@ func main() {
 	e.POST("/user", h.CreateUser)
 	e.GET("/user/:id", h.GetUser)
 	e.POST("/user/:id", h.UpdateUser)
-	e.GET("/user/:id/match", h.GetUserMatches)
+	e.GET("/user/:id/matches", h.GetUserMatches)
+	e.POST("/user/:id/matches", h.GenerateUserMatch)
 	e.GET("/users", h.GetAllUsers)
 	e.POST("/service-conversations", h.CreateServiceConversations)
 	e.GET("/service-conversations/:id", h.GetServiceConversations)

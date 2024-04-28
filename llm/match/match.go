@@ -10,7 +10,7 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
-func GenerateMatch(user model.User, users []model.User) (*model.Match, error) {
+func GenerateMatch(user model.User, users []model.User) (*string, error) {
 	candidates, err := GenerateCandidateMatches(user, users)
 	if err != nil {
 		return nil, err
@@ -71,13 +71,5 @@ func GenerateMatch(user model.User, users []model.User) (*model.Match, error) {
 		return nil, fmt.Errorf("got invalid id")
 	}
 
-	reason, err := ExplainMatchToUser(user, *bestUser)
-	if err != nil {
-		return nil, err
-	}
-
-	return &model.Match{
-		User:   *bestUser,
-		Reason: reason,
-	}, nil
+	return &bestUser.Id, nil
 }

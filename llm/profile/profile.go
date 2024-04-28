@@ -22,9 +22,7 @@ func GenerateProfile(questions []string) (*model.InternalProfile, error) {
 	// 	return nil, err
 	// }
 
-	nonSecretProfile := model.NewNonSecretIntermediateProfile(intermediateProfile)
-
-	features, err := generateUserFeatures(*nonSecretProfile, string(data))
+	features, err := generateUserFeatures(*intermediateProfile, string(data))
 	if err != nil {
 		return nil, err
 	}
@@ -38,12 +36,15 @@ func GenerateProfile(questions []string) (*model.InternalProfile, error) {
 		Demographics:             intermediateProfile.Demographics,
 		LivedExperiences:         intermediateProfile.LivedExperiences,
 		Habits:                   intermediateProfile.Habits,
+		Hobbies:                  intermediateProfile.Hobbies,
 		InterpersonalSkills:      intermediateProfile.InterpersonalSkills,
 		ExceptionalCircumstances: intermediateProfile.ExceptionalCircumstances,
 		Summary:                  features.Summary,
 		Tags:                     features.Tags,
 		Bio:                      features.Bio,
 		KeyQuestions:             features.KeyQuestions,
+		Subtitle:                 features.Subtitle,
+		LookingFor:               features.LookingFor,
 	}, nil
 
 }
