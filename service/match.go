@@ -18,6 +18,21 @@ func NewMatchService(userService UserService, matchStore db.MatchStore) MatchSer
 	return MatchService{userService, matchStore}
 }
 
+func (service *MatchService) GetMatch(id string) (model.Match, error) {
+	match, err := service.MatchStore.GetMatch(id)
+	if err != nil {
+		return model.Match{}, err
+	}
+
+	return model.Match{
+		Id:      match.Id,
+		UserId:  match.UserId,
+		MatchId: match.MatchId,
+		Reason:  match.Reason,
+	}, nil
+
+}
+
 func (service *MatchService) GetUserMatches(id string) ([]model.Match, error) {
 	matches, err := service.MatchStore.GetUserMatches(id)
 	if err != nil {
@@ -27,6 +42,7 @@ func (service *MatchService) GetUserMatches(id string) ([]model.Match, error) {
 	convertedMatches := make([]model.Match, len(matches))
 	for i, match := range matches {
 		convertedMatches[i] = model.Match{
+			Id:      match.Id,
 			UserId:  match.UserId,
 			MatchId: match.MatchId,
 			Reason:  match.Reason,
@@ -77,8 +93,6 @@ func (service *MatchService) GenerateUserMatch(id string) (model.Match, error) {
 		return model.Match{}, err
 	}
 
-	fmt.Println("Other users", otherUsers)
-
 	matchedUserId, err := match.GenerateMatch(*user, otherUsers)
 	if err != nil {
 		return model.Match{}, err
@@ -106,7 +120,7 @@ func (service *MatchService) GenerateUserMatch(id string) (model.Match, error) {
 		return model.Match{}, err
 	}
 
-	err = service.MatchStore.CreateMatch(db.CreateMatch{
+	matchId, err := service.MatchStore.CreateMatch(db.CreateMatch{
 		UserId:  user.Id,
 		MatchId: *matchedUserId,
 		Reason:  firstMatchReason,
@@ -120,6 +134,7 @@ func (service *MatchService) GenerateUserMatch(id string) (model.Match, error) {
 	}
 
 	return model.Match{
+		Id:      *matchId,
 		UserId:  user.Id,
 		MatchId: *matchedUserId,
 		Reason:  firstMatchReason,

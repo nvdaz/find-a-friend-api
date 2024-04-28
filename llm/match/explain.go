@@ -64,7 +64,7 @@ func ExplainMatchToUser(user1, user2 model.User) (string, error) {
 		Explanation string `json:"explanation"`
 	}{}
 
-	err = llm.GetResponseJson(&explanation, llm.ModelGpt3p5, string(prompt), fmt.Sprintf("You are a matchmaker. Write a personalized message to %q (refer to them as 'you') why %q would be a good friend for them. Go into as much detail as possible with a 1-paragraph, 200 word justification. Be sure to use the matched user's name and specific details about their profile in your explanation. Respond with a JSON object without formatting containing a single key 'explanation'.", user1.Name, user2.Name), nil)
+	err = llm.GetResponseJson(&explanation, llm.ModelGpt3p5, string(prompt), fmt.Sprintf("You are a matchmaker. Write a personalized message to %q (refer to them as 'you') why %q would be a good friend for them. Go into as much detail as possible with a 1-paragraph, 60 word justification. Be sure to use the matched user's name and specific details about their profile in your explanation. Use casual, friendly language. Respond with a JSON object without formatting containing a single key 'explanation'.", user1.Name, user2.Name), nil)
 	if err != nil {
 		return "", err
 	}

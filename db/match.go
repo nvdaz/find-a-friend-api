@@ -24,7 +24,7 @@ type Match struct {
 
 func (store *MatchStore) GetUserMatches(id string) ([]Match, error) {
 	rows, err := store.db.Query(
-		`SELECT user_id, match_id, reason, created_at
+		`SELECT id, user_id, match_id, reason, created_at
 		 FROM matches
 		 WHERE user_id = ?`,
 		id)
@@ -37,7 +37,7 @@ func (store *MatchStore) GetUserMatches(id string) ([]Match, error) {
 	matches := []Match{}
 	for rows.Next() {
 		match := Match{}
-		if err := rows.Scan(&match.UserId, &match.MatchId, &match.Reason, &match.CreatedAt); err != nil {
+		if err := rows.Scan(&match.Id, &match.UserId, &match.MatchId, &match.Reason, &match.CreatedAt); err != nil {
 			return nil, err
 		}
 		matches = append(matches, match)
@@ -52,10 +52,10 @@ type CreateMatch struct {
 	Reason  string
 }
 
-func (store *MatchStore) CreateMatch(a, b CreateMatch) error {
+func (store *MatchStore) CreateMatch(a, b CreateMatch) (*string, error) {
 	tx, err := store.db.Begin()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -63,20 +63,22 @@ func (store *MatchStore) CreateMatch(a, b CreateMatch) error {
 		`INSERT INTO matches (id, user_id, match_id, reason, created_at)
 		 VALUES (?, ?, ?, ?, datetime('now'))`)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	_, err = stmt.Exec(uuid.New(), a.UserId, a.MatchId, a.Reason)
+	id := uuid.New().String()
+
+	_, err = stmt.Exec(id, a.UserId, a.MatchId, a.Reason)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	_, err = stmt.Exec(uuid.New(), b.UserId, b.MatchId, b.Reason)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return tx.Commit()
+	return &id, tx.Commit()
 }
 
 func (store *MatchStore) GetAllNonMatchedUsers(id string) ([]User, error) {
@@ -106,4 +108,19 @@ func (store *MatchStore) GetAllNonMatchedUsers(id string) ([]User, error) {
 	}
 
 	return users, nil
+}
+
+func (store *MatchStore) GetMatch(id string) (Match, error) {
+	row := store.db.QueryRow(
+		`SELECT id, user_id, match_id, reason, created_at
+		 FROM matches
+		 WHERE id = ?`,
+		id)
+
+	match := Match{}
+	if err := row.Scan(&match.Id, &match.UserId, &match.MatchId, &match.Reason, &match.CreatedAt); err != nil {
+		return Match{}, err
+	}
+
+	return match, nil
 }

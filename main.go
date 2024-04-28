@@ -36,6 +36,7 @@ func main() {
 	e.GET("/user/:id/matches", h.GetUserMatches)
 	e.POST("/user/:id/matches", h.GenerateUserMatch)
 	e.GET("/users", h.GetAllUsers)
+	e.GET("/match/:id", h.GetMatch)
 	e.POST("/service-conversations", h.CreateServiceConversations)
 	e.GET("/service-conversations/:id", h.GetServiceConversations)
 
