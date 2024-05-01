@@ -162,6 +162,7 @@ func (service *MatchService) GetMatchedUsers(id string) ([]model.User, error) {
 		convertedUsers[i] = model.User{
 			Id:      user.Id,
 			Name:    user.Name,
+			Avatar:  user.Avatar,
 			Profile: &profile,
 		}
 	}

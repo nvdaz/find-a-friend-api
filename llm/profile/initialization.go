@@ -27,7 +27,7 @@ func initializeInterests(questions string) ([]model.Interest, error) {
 	result := struct {
 		Interests []model.Interest `json:"interests"`
 	}{}
-	if err := llm.GetResponseJson(&result, llm.ModelGpt3p5, questions, system, nil); err != nil {
+	if err := llm.GetResponseJson(&result, llm.ModelGpt4, questions, system, nil); err != nil {
 		return nil, err
 	}
 
@@ -42,7 +42,7 @@ func initializePersonality(questions string) (model.Personality, error) {
 	system := "Assess the user's preliminary personality based on the Big Five (OCEAN) model, assigning scores from 0 to 5 for each trait, where 0 means the trait is not present and 5 signifies a strong presence. If it is not possible to determine a trait, provide an average value. List the scores for Openness, Conscientiousness, Extraversion, Agreeableness, and Neuroticism. These scores are only preliminary and need not be perfectly accurate. Provide a JSON object without any formatting containing the keys 'openness', 'conscientiousness', 'extraversion', 'agreeableness', and 'neuroticism'."
 
 	result := model.Personality{}
-	if err := llm.GetResponseJson(&result, llm.ModelGpt3p5, questions, system, nil); err != nil {
+	if err := llm.GetResponseJson(&result, llm.ModelGpt4, questions, system, nil); err != nil {
 		return model.Personality{}, err
 	}
 
@@ -55,7 +55,7 @@ func initializeSkills(questions string) ([]model.Skill, error) {
 	result := struct {
 		Skills []model.Skill `json:"skills"`
 	}{}
-	if err := llm.GetResponseJson(&result, llm.ModelGpt3p5, questions, system, nil); err != nil {
+	if err := llm.GetResponseJson(&result, llm.ModelClaudeSonnet, questions, system, nil); err != nil {
 		return nil, err
 	}
 
@@ -72,7 +72,7 @@ func initializeGoals(questions string) ([]model.Goal, error) {
 	result := struct {
 		Goals []model.Goal `json:"goals"`
 	}{}
-	if err := llm.GetResponseJson(&result, llm.ModelGpt3p5, questions, system, nil); err != nil {
+	if err := llm.GetResponseJson(&result, llm.ModelGpt4, questions, system, nil); err != nil {
 		return nil, err
 	}
 
@@ -89,7 +89,7 @@ func initializeValues(questions string) ([]model.CoreValue, error) {
 	result := struct {
 		Values []model.CoreValue `json:"core_values"`
 	}{}
-	if err := llm.GetResponseJson(&result, llm.ModelGpt3p5, questions, system, nil); err != nil {
+	if err := llm.GetResponseJson(&result, llm.ModelClaudeSonnet, questions, system, nil); err != nil {
 		return nil, err
 	}
 
@@ -104,7 +104,7 @@ func initializeValues(questions string) ([]model.CoreValue, error) {
 func initializeDemographics(questions string) (model.Demographics, error) {
 	system := "Analyze user-asked questions to deduce their demographic profile. Provide a valid JSON object without formatting, with keys 'age_range', 'gender', 'occupation', 'highest_education', 'living_status', 'political_affiliation', 'religious_affiliation', 'nationality', 'spoken_languages' (list), and 'social_class'. Start with an in-depth analysis of the user's queries in an 'analysis' key. Never reply with uncertainty; always provide a best answer."
 	result := model.Demographics{}
-	if err := llm.GetResponseJson(&result, llm.ModelGpt4, questions, system, nil); err != nil {
+	if err := llm.GetResponseJson(&result, llm.ModelClaudeSonnet, questions, system, nil); err != nil {
 		return model.Demographics{}, err
 	}
 
@@ -117,7 +117,7 @@ func initializeLivedExperiences(questions string) ([]string, error) {
 	result := struct {
 		LivedExperiences []string `json:"lived_experiences"`
 	}{}
-	if err := llm.GetResponseJson(&result, llm.ModelGpt3p5, questions, system, nil); err != nil {
+	if err := llm.GetResponseJson(&result, llm.ModelClaudeSonnet, questions, system, nil); err != nil {
 		return nil, err
 	}
 
@@ -130,7 +130,7 @@ func initializeHabits(questions string) ([]string, error) {
 	result := struct {
 		Habits []string `json:"habits"`
 	}{}
-	if err := llm.GetResponseJson(&result, llm.ModelGpt3p5, questions, system, nil); err != nil {
+	if err := llm.GetResponseJson(&result, llm.ModelClaudeSonnet, questions, system, nil); err != nil {
 		return nil, err
 	}
 
@@ -143,7 +143,7 @@ func initializeHobbies(questions string) ([]string, error) {
 	result := struct {
 		Hobbies []string `json:"hobbies"`
 	}{}
-	if err := llm.GetResponseJson(&result, llm.ModelGpt3p5, questions, system, nil); err != nil {
+	if err := llm.GetResponseJson(&result, llm.ModelClaudeSonnet, questions, system, nil); err != nil {
 		return nil, err
 	}
 
@@ -155,7 +155,7 @@ func initializeInterpersonalSkills(questions string) (model.InterpersonalSkills,
 	system := "Analyze the user's responses to determine their interpersonal skills. Provide a JSON object without any formatting containing the keys 'active_listening', 'teamwork', 'responsibility', 'dependability', 'leadership', 'motivation', 'flexibility', 'patience', and 'empathy'. Each key should have a value between 0 and 1, representing the strength of the skill."
 
 	result := model.InterpersonalSkills{}
-	if err := llm.GetResponseJson(&result, llm.ModelGpt4, questions, system, nil); err != nil {
+	if err := llm.GetResponseJson(&result, llm.ModelClaudeSonnet, questions, system, nil); err != nil {
 		return model.InterpersonalSkills{}, err
 	}
 
@@ -168,7 +168,7 @@ func initializeExceptionalCircumstances(questions string) ([]string, error) {
 	result := struct {
 		ExceptionalCircumstances []string `json:"exceptional_circumstances"`
 	}{}
-	if err := llm.GetResponseJson(&result, llm.ModelGpt3p5, questions, system, nil); err != nil {
+	if err := llm.GetResponseJson(&result, llm.ModelClaudeSonnet, questions, system, nil); err != nil {
 		return nil, err
 	}
 

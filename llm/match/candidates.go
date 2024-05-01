@@ -38,7 +38,7 @@ func GenerateCandidateMatches(user model.User, users []model.User) ([]string, er
 		Matches []string `json:"matches"`
 	}{}
 
-	err = llm.GetResponseJson(&matches, llm.ModelGpt4, string(data), fmt.Sprintf("Your job is to generate a list of %d potential matches based on the user summaries provided. Respond with JSON with a key 'matches', a list of user IDs that are potential matches.", CandidateMatchesCount), nil)
+	err = llm.GetResponseJson(&matches, llm.ModelClaudeSonnet, string(data), fmt.Sprintf("Your job is to generate a list of %d potential matches based on the user summaries provided. Respond with JSON with a key 'matches', a list of user IDs that are potential matches.", CandidateMatchesCount), nil)
 	if err != nil {
 		return nil, err
 	}

@@ -27,7 +27,7 @@ func generateUserBio(user model.IntermediateProfile) (string, error) {
 		Bio string `json:"bio"`
 	}{}
 
-	err = llm.GetResponseJson(&result, llm.ModelGpt4, string(profileString), "Create a short, passionate introductory biography in a casual, friendly tone from the perspective of the provided user using personal pronouns. Include a brief description of their personality and interests. The biography should be a single paragraph, no more than 200 words in length. Provide a JSON object without any formatting containing two keys: 'bio', with the value being the biography.", nil)
+	err = llm.GetResponseJson(&result, llm.ModelGpt4, string(profileString), "Create a short, passionate introductory biography in a casual, friendly tone from the perspective of the provided user using personal pronouns. Include a brief description of their personality and interests. The biography should be a single paragraph, no more than 120 words in length. Provide a JSON object without any formatting containing two keys: 'bio', with the value being the biography.", nil)
 	if err != nil {
 		return "", err
 	}
@@ -52,7 +52,7 @@ func generateUserKeyQuestions(user model.IntermediateProfile, questions string) 
 		Questions []string `json:"key_questions"`
 	}{}
 
-	err = llm.GetResponseJson(&result, llm.ModelGpt4, string(data), fmt.Sprintf("Create a list of %d key questions that the user has already asked the chat bot that are representative of their interests and selected to spark conversation. Provide a JSON object without any formatting containing a single key: 'key_questions', with the value being a list of the questions.", UserKeyQuestionsCount), nil)
+	err = llm.GetResponseJson(&result, llm.ModelClaudeSonnet, string(data), fmt.Sprintf("Create a list of %d key questions that the user has already asked the chat bot that are representative of their interests and selected to spark conversation. Provide a JSON object without any formatting containing a single key: 'key_questions', with the value being a list of the questions.", UserKeyQuestionsCount), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +88,7 @@ func generateUserSummary(user model.IntermediateProfile) (string, error) {
 		Summary string `json:"summary"`
 	}{}
 
-	err = llm.GetResponseJson(&result, llm.ModelGpt4, string(profileString), "Create a short summary in a casual, friendly tone of the user's profile including only the most important information about them. The summary should be no more than 200 words in length. Provide a JSON object without any formatting containing a single key: 'summary', with the value being the summary.", nil)
+	err = llm.GetResponseJson(&result, llm.ModelGpt4, string(profileString), "Create a short summary in a casual, friendly tone of the user's profile including only the most important information about them. The summary should be no more than 120 words in length. Provide a JSON object without any formatting containing a single key: 'summary', with the value being the summary.", nil)
 	if err != nil {
 		return "", err
 	}

@@ -26,7 +26,7 @@ func ExplainMatch(user1, user2 model.User) (string, error) {
 		Explanation string `json:"explanation"`
 	}{}
 
-	err = llm.GetResponseJson(&explanation, llm.ModelGpt3p5, string(prompt), "Your job is to explain why these two users are a good match. Go into as much detail as possible with a 200 word justifications. Respond with a JSON object without formatting containing a single key 'explanation', which is a string that explains why these two users are a good match.", nil)
+	err = llm.GetResponseJson(&explanation, llm.ModelClaudeSonnet, string(prompt), "Your job is to explain why these two users are a good match. Go into as much detail as possible with a 200 word justifications. Respond with a JSON object without formatting containing a single key 'explanation', which is a string that explains why these two users are a good match.", nil)
 
 	return explanation.Explanation, err
 }

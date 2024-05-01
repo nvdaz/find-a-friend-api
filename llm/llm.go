@@ -2,6 +2,7 @@ package llm
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 
@@ -54,7 +55,7 @@ func GetResponse(model Model, prompt, system string, temperature *float64) (*str
 
 	requestData := promptData{
 		Action:      "runModel",
-		Model:       ModelClaudeSonnet.String(),
+		Model:       model.String(),
 		Prompt:      prompt,
 		System:      system,
 		Temperature: temperature,
@@ -69,31 +70,23 @@ func GetResponse(model Model, prompt, system string, temperature *float64) (*str
 		return nil, err
 	}
 
-	_, response, err := conn.ReadMessage()
-	if err != nil {
-		return nil, err
-	}
-
-	responseDict := make(map[string]interface{})
-	err = json.Unmarshal(response, &responseDict)
-	if err != nil {
-		return nil, err
-	}
-
-	if _, ok := responseDict["message"]; ok {
-		_, response, err = conn.ReadMessage()
+	for {
+		_, message, err = conn.ReadMessage()
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("read message: %w", err)
+		}
+
+		var response struct {
+			Result string `json:"result"`
+		}
+		if err := json.Unmarshal(message, &response); err != nil {
+			return nil, fmt.Errorf("unmarshal json: %w", err)
+		}
+
+		if response.Result != "" {
+			return &response.Result, nil
 		}
 	}
-
-	responseData := responseData{}
-	err = json.Unmarshal(response, &responseData)
-	if err != nil {
-		return nil, err
-	}
-
-	return &responseData.Result, nil
 }
 
 func GetResponseJson(result any, model Model, prompt, system string, temperature *float64) error {
