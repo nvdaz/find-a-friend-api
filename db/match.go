@@ -17,14 +17,14 @@ func NewMatchStore(db *sql.DB) MatchStore {
 type Match struct {
 	Id        string
 	UserId    string
-	MatchId   string
+	OtherId   string
 	Reason    string
 	CreatedAt string
 }
 
 func (store *MatchStore) GetUserMatches(id string) ([]Match, error) {
 	rows, err := store.db.Query(
-		`SELECT id, user_id, match_id, reason, created_at
+		`SELECT id, user_id, other_id, reason, created_at
 		 FROM matches
 		 WHERE user_id = ?`,
 		id)
@@ -37,7 +37,7 @@ func (store *MatchStore) GetUserMatches(id string) ([]Match, error) {
 	matches := []Match{}
 	for rows.Next() {
 		match := Match{}
-		if err := rows.Scan(&match.Id, &match.UserId, &match.MatchId, &match.Reason, &match.CreatedAt); err != nil {
+		if err := rows.Scan(&match.Id, &match.UserId, &match.OtherId, &match.Reason, &match.CreatedAt); err != nil {
 			return nil, err
 		}
 		matches = append(matches, match)
@@ -48,7 +48,7 @@ func (store *MatchStore) GetUserMatches(id string) ([]Match, error) {
 
 type CreateMatch struct {
 	UserId  string
-	MatchId string
+	OtherId string
 	Reason  string
 }
 
@@ -60,7 +60,7 @@ func (store *MatchStore) CreateMatch(a, b CreateMatch) (*string, error) {
 	defer tx.Rollback()
 
 	stmt, err := tx.Prepare(
-		`INSERT INTO matches (id, user_id, match_id, reason, created_at)
+		`INSERT INTO matches (id, user_id, other_id, reason, created_at)
 		 VALUES (?, ?, ?, ?, datetime('now'))`)
 	if err != nil {
 		return nil, err
@@ -68,12 +68,12 @@ func (store *MatchStore) CreateMatch(a, b CreateMatch) (*string, error) {
 
 	id := uuid.New().String()
 
-	_, err = stmt.Exec(id, a.UserId, a.MatchId, a.Reason)
+	_, err = stmt.Exec(id, a.UserId, a.OtherId, a.Reason)
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = stmt.Exec(uuid.New(), b.UserId, b.MatchId, b.Reason)
+	_, err = stmt.Exec(uuid.New(), b.UserId, b.OtherId, b.Reason)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +88,7 @@ func (store *MatchStore) GetAllNonMatchedUsers(id string) ([]User, error) {
 		 WHERE id != ?
 		 AND profile IS NOT NULL
 		 AND id NOT IN (
-			 SELECT match_id
+			 SELECT other_id
 			 FROM matches
 			 WHERE user_id = ?
 		 )`,
@@ -112,25 +112,25 @@ func (store *MatchStore) GetAllNonMatchedUsers(id string) ([]User, error) {
 
 func (store *MatchStore) GetMatch(id string) (Match, error) {
 	row := store.db.QueryRow(
-		`SELECT id, user_id, match_id, reason, created_at
+		`SELECT id, user_id, other_id, reason, created_at
 		 FROM matches
 		 WHERE id = ?`,
 		id)
 
 	match := Match{}
-	if err := row.Scan(&match.Id, &match.UserId, &match.MatchId, &match.Reason, &match.CreatedAt); err != nil {
+	if err := row.Scan(&match.Id, &match.UserId, &match.OtherId, &match.Reason, &match.CreatedAt); err != nil {
 		return Match{}, err
 	}
 
 	return match, nil
 }
 
-func (store *MatchStore) GetMatchedUsers(id string) ([]User, error )  {
+func (store *MatchStore) GetMatchedUsers(id string) ([]User, error) {
 	rows, err := store.db.Query(
 		`SELECT id, name, avatar, updated_at, profile, generated_at
 		 FROM users
 		 WHERE id IN (
-			 SELECT match_id
+			 SELECT other_id
 			 FROM matches
 			 WHERE user_id = ?
 		 )`,
@@ -143,7 +143,7 @@ func (store *MatchStore) GetMatchedUsers(id string) ([]User, error )  {
 	users := []User{}
 	for rows.Next() {
 		user := User{}
-		if err := rows.Scan(&user.Id, &user.Name,&user.Avatar, &user.UpdatedAt, &user.Profile, &user.GeneratedAt); err != nil {
+		if err := rows.Scan(&user.Id, &user.Name, &user.Avatar, &user.UpdatedAt, &user.Profile, &user.GeneratedAt); err != nil {
 			return nil, err
 		}
 		users = append(users, user)

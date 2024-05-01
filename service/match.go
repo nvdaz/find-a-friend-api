@@ -27,7 +27,7 @@ func (service *MatchService) GetMatch(id string) (model.Match, error) {
 	return model.Match{
 		Id:      match.Id,
 		UserId:  match.UserId,
-		MatchId: match.MatchId,
+		OtherId: match.OtherId,
 		Reason:  match.Reason,
 	}, nil
 
@@ -44,7 +44,7 @@ func (service *MatchService) GetUserMatches(id string) ([]model.Match, error) {
 		convertedMatches[i] = model.Match{
 			Id:      match.Id,
 			UserId:  match.UserId,
-			MatchId: match.MatchId,
+			OtherId: match.OtherId,
 			Reason:  match.Reason,
 		}
 	}
@@ -122,11 +122,11 @@ func (service *MatchService) GenerateUserMatch(id string) (model.Match, error) {
 
 	matchId, err := service.matchStore.CreateMatch(db.CreateMatch{
 		UserId:  user.Id,
-		MatchId: *matchedUserId,
+		OtherId: *matchedUserId,
 		Reason:  firstMatchReason,
 	}, db.CreateMatch{
 		UserId:  *matchedUserId,
-		MatchId: user.Id,
+		OtherId: user.Id,
 		Reason:  secondMatchReason,
 	})
 	if err != nil {
@@ -136,7 +136,7 @@ func (service *MatchService) GenerateUserMatch(id string) (model.Match, error) {
 	return model.Match{
 		Id:      *matchId,
 		UserId:  user.Id,
-		MatchId: *matchedUserId,
+		OtherId: *matchedUserId,
 		Reason:  firstMatchReason,
 	}, nil
 }
