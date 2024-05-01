@@ -26,3 +26,13 @@ CREATE TABLE IF NOT EXISTS `matches` (
     CONSTRAINT `fk_match_id` FOREIGN KEY (`match_id`) REFERENCES `users`(`id`)
     CONSTRAINT `unique_match` UNIQUE (`user_id`, `match_id`)
 );
+
+CREATE TABLE IF NOT EXISTS `messages` (
+    `id` VARCHAR(36) PRIMARY KEY,
+    `sender_id` VARCHAR(36),
+    `receiver_id` VARCHAR(36),
+    `message` TEXT NOT NULL,
+    `created_at` DATETIME NOT NULL,
+    CONSTRAINT `fk_sender_id` FOREIGN KEY (`sender_id`) REFERENCES `users`(`id`),
+    CONSTRAINT `fk_receiver_id` FOREIGN KEY (`receiver_id`) REFERENCES `users`(`id`)
+);

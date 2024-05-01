@@ -11,7 +11,7 @@ import (
 
 type MatchService struct {
 	UserService UserService
-	MatchStore  db.MatchStore
+	matchStore  db.MatchStore
 }
 
 func NewMatchService(userService UserService, matchStore db.MatchStore) MatchService {
@@ -19,7 +19,7 @@ func NewMatchService(userService UserService, matchStore db.MatchStore) MatchSer
 }
 
 func (service *MatchService) GetMatch(id string) (model.Match, error) {
-	match, err := service.MatchStore.GetMatch(id)
+	match, err := service.matchStore.GetMatch(id)
 	if err != nil {
 		return model.Match{}, err
 	}
@@ -34,7 +34,7 @@ func (service *MatchService) GetMatch(id string) (model.Match, error) {
 }
 
 func (service *MatchService) GetUserMatches(id string) ([]model.Match, error) {
-	matches, err := service.MatchStore.GetUserMatches(id)
+	matches, err := service.matchStore.GetUserMatches(id)
 	if err != nil {
 		return nil, err
 	}
@@ -53,7 +53,7 @@ func (service *MatchService) GetUserMatches(id string) ([]model.Match, error) {
 }
 
 func (service *MatchService) GetAllNonMatchedUsers(id string) ([]model.User, error) {
-	users, err := service.MatchStore.GetAllNonMatchedUsers(id)
+	users, err := service.matchStore.GetAllNonMatchedUsers(id)
 	if err != nil {
 		return nil, err
 	}
@@ -120,7 +120,7 @@ func (service *MatchService) GenerateUserMatch(id string) (model.Match, error) {
 		return model.Match{}, err
 	}
 
-	matchId, err := service.MatchStore.CreateMatch(db.CreateMatch{
+	matchId, err := service.matchStore.CreateMatch(db.CreateMatch{
 		UserId:  user.Id,
 		MatchId: *matchedUserId,
 		Reason:  firstMatchReason,
@@ -139,4 +139,32 @@ func (service *MatchService) GenerateUserMatch(id string) (model.Match, error) {
 		MatchId: *matchedUserId,
 		Reason:  firstMatchReason,
 	}, nil
+}
+
+func (service *MatchService) GetMatchedUsers(id string) ([]model.User, error) {
+	users, err := service.matchStore.GetMatchedUsers(id)
+	if err != nil {
+		return nil, err
+	}
+
+	convertedUsers := make([]model.User, len(users))
+	for i, user := range users {
+		if user.Profile == nil {
+			continue
+		}
+
+		profile := model.InternalProfile{}
+		err = json.Unmarshal([]byte(*user.Profile), &profile)
+		if err != nil {
+			return nil, err
+		}
+
+		convertedUsers[i] = model.User{
+			Id:      user.Id,
+			Name:    user.Name,
+			Profile: &profile,
+		}
+	}
+
+	return convertedUsers, nil
 }

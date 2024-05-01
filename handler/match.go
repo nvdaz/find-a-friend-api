@@ -9,7 +9,7 @@ import (
 
 func (handler *Handler) GetUserMatches(c echo.Context) error {
 	id := c.Param("id")
-	matches, err := handler.matchService.GetUserMatches(id)
+	matches, err := handler.matchService.GetMatchedUsers(id)
 	if err != nil {
 		fmt.Println("Error getting user matches", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, nil)

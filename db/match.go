@@ -124,3 +124,30 @@ func (store *MatchStore) GetMatch(id string) (Match, error) {
 
 	return match, nil
 }
+
+func (store *MatchStore) GetMatchedUsers(id string) ([]User, error )  {
+	rows, err := store.db.Query(
+		`SELECT id, name, avatar, updated_at, profile, generated_at
+		 FROM users
+		 WHERE id IN (
+			 SELECT match_id
+			 FROM matches
+			 WHERE user_id = ?
+		 )`,
+		id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	users := []User{}
+	for rows.Next() {
+		user := User{}
+		if err := rows.Scan(&user.Id, &user.Name,&user.Avatar, &user.UpdatedAt, &user.Profile, &user.GeneratedAt); err != nil {
+			return nil, err
+		}
+		users = append(users, user)
+	}
+
+	return users, nil
+}

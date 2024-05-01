@@ -5,18 +5,20 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/nvdaz/find-a-friend-api/db"
 	"github.com/nvdaz/find-a-friend-api/llm/profile"
 	"github.com/nvdaz/find-a-friend-api/model"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type UserService struct {
-	userStore                db.UserStore
-	serviceConversationStore db.ServiceConversationStore
+	userStore    db.UserStore
+	messageStore db.MessageStore
 }
 
-func NewUserService(userStore db.UserStore, serviceConversationStore db.ServiceConversationStore) UserService {
-	return UserService{userStore, serviceConversationStore}
+func NewUserService(userStore db.UserStore, messageStore db.MessageStore) UserService {
+	return UserService{userStore, messageStore}
 }
 
 func needsUpdate(user *db.User) bool {
@@ -65,18 +67,14 @@ func (service *UserService) GetUser(id string) (*model.User, error) {
 		return &model.User{
 			Id:      user.Id,
 			Name:    user.Name,
+			Avatar:  user.Avatar,
 			Profile: &profile,
 		}, nil
 	}
 
-	serviceConversations, err := service.serviceConversationStore.GetRecentServiceConversations(id, 100)
+	questions, err := service.GetAgentQuestions(id, 100)
 	if err != nil {
 		return nil, err
-	}
-
-	questions := make([]string, 0)
-	for _, conversation := range serviceConversations {
-		questions = append(questions, conversation.Question)
 	}
 
 	profile, err := profile.GenerateProfile(questions)
@@ -94,6 +92,7 @@ func (service *UserService) GetUser(id string) (*model.User, error) {
 	return &model.User{
 		Id:      user.Id,
 		Name:    user.Name,
+		Avatar:  user.Avatar,
 		Profile: profile,
 	}, nil
 }
@@ -126,6 +125,87 @@ func (service *UserService) GetAllUsers() ([]model.User, error) {
 	return result, nil
 }
 
-func (service *UserService) CreateUser(createUser db.CreateUser) error {
-	return service.userStore.CreateUser(createUser)
+func (service *UserService) GetUserByName(name string) (*model.UserAccount, error) {
+	user, err := service.userStore.GetUserByName(name)
+	if err != nil {
+		return nil, err
+	}
+
+	return &model.UserAccount{
+		Id:   user.Id,
+		Name: user.Name,
+	}, nil
+}
+
+type RegisterUser struct {
+	Name     string `json:"name"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+func (service *UserService) RegisterUser(registerUser RegisterUser) (*model.UserAccount, error) {
+	password, err := bcrypt.GenerateFromPassword([]byte(registerUser.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, err
+	}
+
+	id := uuid.New().String()
+
+	err = service.userStore.CreateUser(db.CreateUser{
+		Id:       id,
+		Name:     registerUser.Name,
+		Username: registerUser.Username,
+		Password: string(password),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &model.UserAccount{
+		Id:   id,
+		Name: registerUser.Name,
+	}, nil
+
+}
+
+type LoginUser struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+func (service *UserService) LoginUser(loginUser LoginUser) (*model.UserAccount, error) {
+	user, err := service.userStore.GetUserByUsername(loginUser.Username)
+	if err != nil {
+		fmt.Println("Error getting user by username", err)
+		return nil, err
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(loginUser.Password))
+	if err != nil {
+		return nil, err
+	}
+
+	return &model.UserAccount{
+		Id:     user.Id,
+		Name:   user.Name,
+		Avatar: user.Avatar,
+	}, nil
+}
+
+func (service *UserService) UpdateAvatar(id, avatar string) error {
+	return service.userStore.UpdateAvatar(id, avatar)
+}
+
+func (service *UserService) GetAgentQuestions(id string, limit int) ([]string, error) {
+	questions, err := service.messageStore.GetRecentMessages(id, "00000000-0000-0000-0000-000000000000", limit)
+	if err != nil {
+		return nil, err
+	}
+
+	questionStrings := make([]string, len(questions))
+	for i, question := range questions {
+		questionStrings[i] = question.Message
+	}
+
+	return questionStrings, nil
 }

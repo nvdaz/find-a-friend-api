@@ -16,6 +16,9 @@ func NewUserStore(db *sql.DB) UserStore {
 type User struct {
 	Id          string
 	Name        string
+	Avatar      *string
+	Username    string
+	Password    string
 	UpdatedAt   string
 	Profile     *string
 	GeneratedAt *string
@@ -26,7 +29,21 @@ var ErrUserNotFound = errors.New("user not found")
 func (store *UserStore) GetUser(id string) (*User, error) {
 	user := User{}
 
-	row := store.db.QueryRow("SELECT id, name, updated_at, profile, generated_at FROM users WHERE id = ?", id)
+	row := store.db.QueryRow("SELECT id, name, avatar, updated_at, profile, generated_at FROM users WHERE id = ?", id)
+
+	if err := row.Scan(&user.Id, &user.Name, &user.Avatar, &user.UpdatedAt, &user.Profile, &user.GeneratedAt); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, ErrUserNotFound
+		}
+		return nil, err
+	}
+
+	return &user, nil
+}
+
+func (store *UserStore) GetUserByName(name string) (*User, error) {
+	user := User{}
+	row := store.db.QueryRow("SELECT id, name, updated_at, profile, generated_at FROM users WHERE name = ?", name)
 
 	if err := row.Scan(&user.Id, &user.Name, &user.UpdatedAt, &user.Profile, &user.GeneratedAt); err != nil {
 		if err == sql.ErrNoRows {
@@ -39,14 +56,32 @@ func (store *UserStore) GetUser(id string) (*User, error) {
 }
 
 type CreateUser struct {
-	Id   string
-	Name string
+	Id       string
+	Name     string
+	Username string
+	Password string
 }
 
-func (store *UserStore) CreateUser(createUser CreateUser) error {
-	_, err := store.db.Exec("INSERT INTO users (id, name, updated_at) VALUES (?, ?, datetime('now'))", createUser.Id, createUser.Name)
+func (store *UserStore) CreateUser(registerUser CreateUser) error {
+	_, err := store.db.Exec("INSERT INTO users (id, name, username, password, updated_at) VALUES (?, ?, ?, ?, datetime('now'))",
+		registerUser.Id, registerUser.Name, registerUser.Username, registerUser.Password)
 
 	return err
+}
+
+func (store *UserStore) GetUserByUsername(username string) (*User, error) {
+	row := store.db.QueryRow("SELECT id, name, updated_at, avatar, generated_at, password FROM users WHERE username = ?", username)
+	user := User{}
+	if err := row.Scan(&user.Id, &user.Name, &user.UpdatedAt, &user.Avatar, &user.GeneratedAt, &user.Password); err != nil {
+		if err == sql.ErrNoRows {
+
+			return nil, ErrUserNotFound
+		}
+		return nil, err
+	}
+
+	return &user, nil
+
 }
 
 func (store *UserStore) MarkUserAsUpdated(id string) error {
@@ -84,4 +119,10 @@ func (store *UserStore) GetAllUsers() ([]User, error) {
 	}
 
 	return users, nil
+}
+
+func (store *UserStore) UpdateAvatar(id, avatar string) error {
+	_, err := store.db.Exec("UPDATE users SET avatar = ? WHERE id = ?", avatar, id)
+
+	return err
 }

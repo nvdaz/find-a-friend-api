@@ -21,11 +21,12 @@ func main() {
 	defer database.Close()
 
 	userStore := db.NewUserStore(database)
-	serviceConversationStore := db.NewServiceConversationStore(database)
+	messageStore := db.NewMessagesStore(database)
 	matchStore := db.NewMatchStore(database)
-	userService := service.NewUserService(userStore, serviceConversationStore)
+	userService := service.NewUserService(userStore, messageStore)
 	matchService := service.NewMatchService(userService, matchStore)
-	h := handler.NewHandler(userService, matchService, &serviceConversationStore)
+	messageService := service.NewMessagesService(messageStore, userService)
+	h := handler.NewHandler(userService, matchService, messageService)
 
 	e := echo.New()
 
@@ -37,8 +38,12 @@ func main() {
 	e.POST("/user/:id/matches", h.GenerateUserMatch)
 	e.GET("/users", h.GetAllUsers)
 	e.GET("/match/:id", h.GetMatch)
-	e.POST("/service-conversations", h.CreateServiceConversations)
-	e.GET("/service-conversations/:id", h.GetServiceConversations)
+	e.POST("/messages", h.GetMessages)
+	e.POST("/messages/create", h.CreateMessage)
+	e.GET("/login/:name", h.GetUserByName)
+	e.POST("/register", h.RegisterUser)
+	e.POST("/login", h.LoginUser)
+	e.POST("/set-icon", h.UpdateUserIcon)
 
 	fmt.Println("Starting server...")
 
