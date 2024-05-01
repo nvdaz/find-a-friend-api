@@ -50,6 +50,43 @@ func (service *MessageService) GetMessages(senderId, receiverId string) ([]model
 	return conversation, nil
 }
 
+func (service *MessageService) PollMessages(senderId, receiverId, after string) ([]model.Message, error) {
+	sent, err := service.messagesStore.GetNewMessages(senderId, receiverId, after)
+	if err != nil {
+		return nil, err
+	}
+	received, err := service.messagesStore.GetNewMessages(receiverId, senderId, after)
+	if err != nil {
+		return nil, err
+	}
+
+	conversation := make([]model.Message, 0)
+	sentIndex := 0
+	receivedIndex := 0
+	for sentIndex < len(sent) && receivedIndex < len(received) {
+		if sent[sentIndex].CreatedAt > received[receivedIndex].CreatedAt {
+			conversation = append(conversation, model.Message(sent[sentIndex]))
+			sentIndex++
+		} else {
+			conversation = append(conversation, model.Message(received[receivedIndex]))
+			receivedIndex++
+		}
+	}
+
+	for sentIndex < len(sent) {
+		conversation = append(conversation, model.Message(sent[sentIndex]))
+		sentIndex++
+	}
+
+	for receivedIndex < len(received) {
+		conversation = append(conversation, model.Message(received[receivedIndex]))
+		receivedIndex++
+	}
+
+	return conversation, nil
+
+}
+
 func (service *MessageService) CreateMessage(senderId, receiverId, message string) error {
 	err := service.messagesStore.CreateMessage(senderId, receiverId, message)
 	if err != nil {

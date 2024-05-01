@@ -48,3 +48,24 @@ func (handler *Handler) GetMessages(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, messages)
 }
+
+type PollMessagesRequest struct {
+	UserId  string `json:"user_id"`
+	OtherId string `json:"other_id"`
+	After   string `json:"after"`
+}
+
+func (handler *Handler) PollMessages(c echo.Context) error {
+	request := PollMessagesRequest{}
+	if err := c.Bind(&request); err != nil {
+		return echo.NewHTTPError(http.StatusUnprocessableEntity, "error parsing request body")
+	}
+
+	messages, err := handler.messageService.PollMessages(request.UserId, request.OtherId, request.After)
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "error polling messages")
+	}
+
+	return c.JSON(http.StatusOK, messages)
+}

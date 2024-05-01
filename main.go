@@ -40,6 +40,7 @@ func main() {
 	e.GET("/match/:id", h.GetMatch)
 	e.POST("/messages", h.GetMessages)
 	e.POST("/messages/create", h.CreateMessage)
+	e.POST("/messages/poll", h.PollMessages)
 	e.GET("/login/:name", h.GetUserByName)
 	e.POST("/register", h.RegisterUser)
 	e.POST("/login", h.LoginUser)

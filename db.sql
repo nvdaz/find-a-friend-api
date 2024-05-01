@@ -3,10 +3,10 @@ CREATE TABLE IF NOT EXISTS `users` (
     `username` TEXT UNIQUE NOT NULL,
     `password` BLOB NOT NULL,
     `name` TEXT NOT NULL,
-    `avatar` TEXT NOT NULL,
+    `avatar` TEXT,
     `updated_at` DATETIME NOT NULL,
-    `profile` JSONB NOT NULL,
-    `generated_at` DATETIME NOT NULL,
+    `profile` JSONB,
+    `generated_at` DATETIME
 );
 
 CREATE TABLE IF NOT EXISTS `matches` (

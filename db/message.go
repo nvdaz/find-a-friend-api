@@ -48,6 +48,34 @@ func (store *MessageStore) GetRecentMessages(senderId, receiverId string, limit 
 	return userConversations, nil
 }
 
+func (store *MessageStore) GetNewMessages(senderId, receiverId string, after string) ([]Message, error) {
+	rows, err := store.db.Query(
+		`SELECT id, sender_id, receiver_id, message, created_at
+		 FROM messages
+		 WHERE sender_id = ? AND receiver_id = ? AND created_at > datetime(?)
+		 ORDER BY created_at DESC
+		 LIMIT 100
+		 `,
+		senderId, receiverId, after)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	userConversations := []Message{}
+	for rows.Next() {
+		userConversation := Message{}
+		if err := rows.Scan(&userConversation.Id, &userConversation.SenderId,
+			&userConversation.ReceiverId, &userConversation.Message, &userConversation.CreatedAt); err != nil {
+			return nil, err
+		}
+		userConversations = append(userConversations, userConversation)
+	}
+
+	return userConversations, nil
+
+}
+
 func (store *MessageStore) CreateMessage(senderId, receiverId, message string) error {
 	_, err := store.db.Exec(
 		`INSERT INTO messages (id, sender_id, receiver_id, message, created_at)
