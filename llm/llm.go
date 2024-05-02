@@ -30,12 +30,6 @@ func unmarshalResponse(result any, response string) error {
 	return json.Unmarshal([]byte(response), &result)
 }
 
-type responseData struct {
-	Result string `json:"result"`
-	Grade  string `json:"grade"`
-	Model  string `json:"model"`
-}
-
 type promptData struct {
 	Action      string   `json:"action"`
 	Model       string   `json:"model"`
@@ -97,10 +91,10 @@ func GetResponseJson(result any, model Model, prompt, system string, temperature
 	for i := 0; i < retries; i++ {
 		log.Println(system)
 		response, err := GetResponse(model, prompt, system, temperature)
-		log.Println(*response, err)
 		if err != nil {
 			continue
 		}
+		log.Println(*response, err)
 
 		err = unmarshalResponse(result, *response)
 		if err == nil {
