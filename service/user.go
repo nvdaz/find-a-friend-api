@@ -125,25 +125,13 @@ func (service *UserService) GetAllUsers() ([]model.User, error) {
 	return result, nil
 }
 
-func (service *UserService) GetUserByName(name string) (*model.UserAccount, error) {
-	user, err := service.userStore.GetUserByName(name)
-	if err != nil {
-		return nil, err
-	}
-
-	return &model.UserAccount{
-		Id:   user.Id,
-		Name: user.Name,
-	}, nil
-}
-
 type RegisterUser struct {
 	Name     string `json:"name"`
 	Username string `json:"username"`
 	Password string `json:"password"`
 }
 
-func (service *UserService) RegisterUser(registerUser RegisterUser) (*model.UserAccount, error) {
+func (service *UserService) RegisterUser(registerUser RegisterUser) (*model.User, error) {
 	password, err := bcrypt.GenerateFromPassword([]byte(registerUser.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, err
@@ -161,7 +149,7 @@ func (service *UserService) RegisterUser(registerUser RegisterUser) (*model.User
 		return nil, err
 	}
 
-	return &model.UserAccount{
+	return &model.User{
 		Id:   id,
 		Name: registerUser.Name,
 	}, nil
@@ -173,7 +161,7 @@ type LoginUser struct {
 	Password string `json:"password"`
 }
 
-func (service *UserService) LoginUser(loginUser LoginUser) (*model.UserAccount, error) {
+func (service *UserService) LoginUser(loginUser LoginUser) (*model.User, error) {
 	user, err := service.userStore.GetUserByUsername(loginUser.Username)
 	if err != nil {
 		fmt.Println("Error getting user by username", err)
@@ -185,10 +173,19 @@ func (service *UserService) LoginUser(loginUser LoginUser) (*model.UserAccount, 
 		return nil, err
 	}
 
-	return &model.UserAccount{
-		Id:     user.Id,
-		Name:   user.Name,
-		Avatar: user.Avatar,
+	var profile *model.InternalProfile
+	if user.Profile != nil {
+		profile = &model.InternalProfile{}
+		json.Unmarshal([]byte(*user.Profile), profile)
+	}
+
+	fmt.Println("Profile", *user.Profile)
+
+	return &model.User{
+		Id:      user.Id,
+		Name:    user.Name,
+		Avatar:  user.Avatar,
+		Profile: profile,
 	}, nil
 }
 

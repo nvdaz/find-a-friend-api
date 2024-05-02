@@ -1,11 +1,5 @@
 package model
 
-type UserAccount struct {
-	Id     string  `json:"id"`
-	Name   string  `json:"name"`
-	Avatar *string `json:"avatar"`
-}
-
 type Personality struct {
 	Extroversion      float64 `json:"extroversion"`
 	Agreeableness     float64 `json:"agreeableness"`

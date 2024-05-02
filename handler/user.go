@@ -52,17 +52,6 @@ func (handler *Handler) UpdateUser(c echo.Context) error {
 	return c.NoContent(http.StatusNotImplemented)
 }
 
-func (handler *Handler) GetUserByName(c echo.Context) error {
-	name := c.Param("name")
-	id, err := handler.userService.GetUserByName(name)
-	if err != nil {
-		fmt.Println("Error getting id by name", err)
-		return c.JSON(http.StatusInternalServerError, nil)
-	}
-
-	return c.JSON(http.StatusOK, id)
-}
-
 type RegisterUserRequest struct {
 	Name     string `json:"name"`
 	Username string `json:"username"`

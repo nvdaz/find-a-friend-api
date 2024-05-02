@@ -41,20 +41,6 @@ func (store *UserStore) GetUser(id string) (*User, error) {
 	return &user, nil
 }
 
-func (store *UserStore) GetUserByName(name string) (*User, error) {
-	user := User{}
-	row := store.db.QueryRow("SELECT id, name, updated_at, profile, generated_at FROM users WHERE name = ?", name)
-
-	if err := row.Scan(&user.Id, &user.Name, &user.UpdatedAt, &user.Profile, &user.GeneratedAt); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, ErrUserNotFound
-		}
-		return nil, err
-	}
-
-	return &user, nil
-}
-
 type CreateUser struct {
 	Id       string
 	Name     string
@@ -70,9 +56,9 @@ func (store *UserStore) CreateUser(registerUser CreateUser) error {
 }
 
 func (store *UserStore) GetUserByUsername(username string) (*User, error) {
-	row := store.db.QueryRow("SELECT id, name, updated_at, avatar, generated_at, password FROM users WHERE username = ?", username)
+	row := store.db.QueryRow("SELECT id, name, updated_at, avatar, profile, generated_at, password FROM users WHERE username = ?", username)
 	user := User{}
-	if err := row.Scan(&user.Id, &user.Name, &user.UpdatedAt, &user.Avatar, &user.GeneratedAt, &user.Password); err != nil {
+	if err := row.Scan(&user.Id, &user.Name, &user.UpdatedAt, &user.Avatar, &user.Profile, &user.GeneratedAt, &user.Password); err != nil {
 		if err == sql.ErrNoRows {
 
 			return nil, ErrUserNotFound

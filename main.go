@@ -41,7 +41,6 @@ func main() {
 	e.POST("/messages", h.GetMessages)
 	e.POST("/messages/create", h.CreateMessage)
 	e.POST("/messages/poll", h.PollMessages)
-	e.GET("/login/:name", h.GetUserByName)
 	e.POST("/register", h.RegisterUser)
 	e.POST("/login", h.LoginUser)
 	e.POST("/set-icon", h.UpdateUserIcon)
