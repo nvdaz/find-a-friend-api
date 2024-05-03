@@ -51,6 +51,12 @@ type Tag struct {
 	Emoji string `json:"emoji"`
 }
 
+type Topic struct {
+	Topic string  `json:"topic"`
+	Level float64 `json:"level"`
+	Emoji string  `json:"emoji"`
+}
+
 type IntermediateProfile struct {
 	Interests                []Interest          `json:"interests"`
 	Personality              Personality         `json:"personality"`
@@ -63,6 +69,7 @@ type IntermediateProfile struct {
 	Hobbies                  []string            `json:"hobbies"`
 	InterpersonalSkills      InterpersonalSkills `json:"interpersonal_skills"`
 	ExceptionalCircumstances []string            `json:"exceptional_circumstances"`
+	Topics                   []Topic             `json:"topics"`
 }
 
 type Demographics struct {
@@ -109,6 +116,7 @@ type InternalProfile struct {
 	LivedExperiences         []string            `json:"lived_experiences"`
 	Habits                   []string            `json:"habits"`
 	Hobbies                  []string            `json:"hobbies"`
+	Topics                   []Topic             `json:"topics"`
 	InterpersonalSkills      InterpersonalSkills `json:"interpersonal_skills"`
 	ExceptionalCircumstances []string            `json:"exceptional_circumstances"`
 	Summary                  string              `json:"summary"`

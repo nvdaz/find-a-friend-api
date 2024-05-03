@@ -88,7 +88,7 @@ func generateUserSummary(user model.IntermediateProfile) (string, error) {
 		Summary string `json:"summary"`
 	}{}
 
-	err = llm.GetResponseJson(&result, llm.ModelGpt4, string(profileString), "Create a short summary in a casual, friendly tone of the user's profile including only the most important information about them. The summary should be no more than 120 words in length. Provide a JSON object without any formatting containing a single key: 'summary', with the value being the summary.", nil)
+	err = llm.GetResponseJson(&result, llm.ModelGpt4, string(profileString), "Create an in-depth summary of the user's profile including only the most important information about them. The summary should be no more than 120 words in length. Provide a JSON object without any formatting containing a single key: 'summary', with the value being the summary.", nil)
 	if err != nil {
 		return "", err
 	}

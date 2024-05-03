@@ -39,10 +39,10 @@ func initializeInterests(questions string) ([]model.Interest, error) {
 }
 
 func initializePersonality(questions string) (model.Personality, error) {
-	system := "Assess the user's preliminary personality based on the Big Five (OCEAN) model, assigning scores from 0 to 5 for each trait, where 0 means the trait is not present and 5 signifies a strong presence. If it is not possible to determine a trait, provide an average value. List the scores for Openness, Conscientiousness, Extroersion, Agreeableness, and Neuroticism. These scores are only preliminary and need not be perfectly accurate. Provide a JSON object without any formatting containing the keys 'openness', 'conscientiousness', 'extroversion', 'agreeableness', and 'neuroticism'."
+	system := "Assess the user's preliminary personality based on the Big Five (OCEAN) model, assigning scores from 0 to 5 for each trait, where 0 means the trait is not present and 5 signifies a strong presence. If it is not possible to determine a trait, provide an average value. List the scores for Openness, Conscientiousness, Extroersion, Agreeableness, and Neuroticism. These scores are only preliminary and need not be perfectly accurate. Provide a JSON object without any formatting containing the keys 'openness', 'conscientiousness', 'extroversion', 'agreeableness', and 'neuroticism'. Start with an in-depth analysis of the user's queries in an 'analysis' key."
 
 	result := model.Personality{}
-	if err := llm.GetResponseJson(&result, llm.ModelGpt4, questions, system, nil); err != nil {
+	if err := llm.GetResponseJson(&result, llm.ModelClaudeSonnet, questions, system, nil); err != nil {
 		return model.Personality{}, err
 	}
 
@@ -72,7 +72,7 @@ func initializeGoals(questions string) ([]model.Goal, error) {
 	result := struct {
 		Goals []model.Goal `json:"goals"`
 	}{}
-	if err := llm.GetResponseJson(&result, llm.ModelGpt4, questions, system, nil); err != nil {
+	if err := llm.GetResponseJson(&result, llm.ModelClaudeSonnet, questions, system, nil); err != nil {
 		return nil, err
 	}
 
@@ -84,7 +84,7 @@ func initializeGoals(questions string) ([]model.Goal, error) {
 }
 
 func initializeValues(questions string) ([]model.CoreValue, error) {
-	system := fmt.Sprintf("Create a list of the user's values and worldviews based on the provided chatbot questions. The list should contain %d specific values. Provide a JSON object without any formatting containing the key 'core_values', with the value being the list of values. Each value should be an object with a key 'value' containing the specific value and a key 'importance' containing the importance to the user on a scale from 0 to 1.", UserValuesCount)
+	system := fmt.Sprintf("Create a list of the user's values and worldviews based on the provided chatbot questions. The list should contain %d specific values. Provide a JSON object without any formatting containing the key 'core_values', with the value being the list of values. Each value should be an object with a key 'value' containing the specific value and a key 'importance' containing the importance to the user on a scale from 0 to 1. Start with an in-depth analysis of the user's queries in an 'analysis' key.", UserValuesCount)
 
 	result := struct {
 		Values []model.CoreValue `json:"core_values"`
@@ -152,7 +152,7 @@ func initializeHobbies(questions string) ([]string, error) {
 }
 
 func initializeInterpersonalSkills(questions string) (model.InterpersonalSkills, error) {
-	system := "Analyze the user's responses to determine their interpersonal skills. Provide a JSON object without any formatting containing the keys 'active_listening', 'teamwork', 'responsibility', 'dependability', 'leadership', 'motivation', 'flexibility', 'patience', and 'empathy'. Each key should have a value between 0 and 1, representing the strength of the skill."
+	system := "Analyze the user's responses to determine their interpersonal skills. Provide a JSON object without any formatting containing the keys 'active_listening', 'teamwork', 'responsibility', 'dependability', 'leadership', 'motivation', 'flexibility', 'patience', and 'empathy'. Each key should have a value between 0 and 1, representing the strength of the skill. Start with an in-depth analysis of the user's queries in an 'analysis' key. "
 
 	result := model.InterpersonalSkills{}
 	if err := llm.GetResponseJson(&result, llm.ModelClaudeSonnet, questions, system, nil); err != nil {
@@ -163,7 +163,7 @@ func initializeInterpersonalSkills(questions string) (model.InterpersonalSkills,
 }
 
 func initializeExceptionalCircumstances(questions string) ([]string, error) {
-	system := "Analyze the questions the user asked to identify any potential challenges or conditions they may have mentioned, such as disabilities or autism. Provide a JSON object, formatted properly, with the key 'exceptional_circumstances'. The value should be a list of these challenges, if any are mentioned. If no specific challenges are mentioned, the list should be empty."
+	system := "Analyze the questions the user asked to identify any potential challenges or conditions they may have mentioned, such as disabilities or autism. Provide a JSON object, formatted properly, with the key 'exceptional_circumstances'. The value should be a list of these challenges, if any are mentioned. If no specific challenges are mentioned, the list should be empty. Start with an in-depth analysis of the user's queries in an 'analysis' key. "
 
 	result := struct {
 		ExceptionalCircumstances []string `json:"exceptional_circumstances"`
@@ -176,7 +176,7 @@ func initializeExceptionalCircumstances(questions string) ([]string, error) {
 
 }
 
-func initializeProfile(questions string) (*model.IntermediateProfile, error) {
+func initializeProfile(id string, questions string, conversations string) (*model.IntermediateProfile, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	group, _ := errgroup.WithContext(ctx)
 
@@ -194,6 +194,9 @@ func initializeProfile(questions string) (*model.IntermediateProfile, error) {
 	var habits []string
 	var hobbies []string
 	var exceptionalCircumstances []string
+	var topics []model.Topic
+	var conversationPersonality model.Personality
+	var conversationInterpersonalSkills model.InterpersonalSkills
 	var err error
 
 	group.Go(func() error {
@@ -295,13 +298,63 @@ func initializeProfile(questions string) (*model.IntermediateProfile, error) {
 		return err
 	})
 
+	group.Go(func() error {
+		if err = sem.Acquire(ctx, 1); err != nil {
+			return err
+		}
+		defer sem.Release(1)
+
+		topics, err = GenerateTopicsFromConversations(conversations)
+		return err
+	})
+
+	group.Go(func() error {
+		if err = sem.Acquire(ctx, 1); err != nil {
+			return err
+		}
+		defer sem.Release(1)
+
+		conversationPersonality, err = GeneratePersonalityFromConversations(id, conversations)
+		return err
+	})
+
+	group.Go(func() error {
+		if err = sem.Acquire(ctx, 1); err != nil {
+			return err
+		}
+		defer sem.Release(1)
+
+		conversationInterpersonalSkills, err = GenerateInterpersonalSkillsFromConversations(id, conversations)
+		return err
+	})
+
 	if err := group.Wait(); err != nil {
 		return nil, err
 	}
 
+	averagePersonality := model.Personality{
+		Openness:          (personality.Openness + conversationPersonality.Openness) / 2,
+		Conscientiousness: (personality.Conscientiousness + conversationPersonality.Conscientiousness) / 2,
+		Extroversion:      (personality.Extroversion + conversationPersonality.Extroversion) / 2,
+		Agreeableness:     (personality.Agreeableness + conversationPersonality.Agreeableness) / 2,
+		Neuroticism:       (personality.Neuroticism + conversationPersonality.Neuroticism) / 2,
+	}
+
+	averageInterpersonalSkills := model.InterpersonalSkills{
+		ActiveListening: (interpersonalSkills.ActiveListening + conversationInterpersonalSkills.ActiveListening) / 2,
+		Teamwork:        (interpersonalSkills.Teamwork + conversationInterpersonalSkills.Teamwork) / 2,
+		Responsibility:  (interpersonalSkills.Responsibility + conversationInterpersonalSkills.Responsibility) / 2,
+		Dependability:   (interpersonalSkills.Dependability + conversationInterpersonalSkills.Dependability) / 2,
+		Leadership:      (interpersonalSkills.Leadership + conversationInterpersonalSkills.Leadership) / 2,
+		Motivation:      (interpersonalSkills.Motivation + conversationInterpersonalSkills.Motivation) / 2,
+		Flexibility:     (interpersonalSkills.Flexibility + conversationInterpersonalSkills.Flexibility) / 2,
+		Patience:        (interpersonalSkills.Patience + conversationInterpersonalSkills.Patience) / 2,
+		Empathy:         (interpersonalSkills.Empathy + conversationInterpersonalSkills.Empathy) / 2,
+	}
+
 	return &model.IntermediateProfile{
 		Interests:                interests,
-		Personality:              personality,
+		Personality:              averagePersonality,
 		Skills:                   skills,
 		Goals:                    goals,
 		Values:                   values,
@@ -309,7 +362,8 @@ func initializeProfile(questions string) (*model.IntermediateProfile, error) {
 		LivedExperiences:         livedExperiences,
 		Habits:                   habits,
 		Hobbies:                  hobbies,
-		InterpersonalSkills:      interpersonalSkills,
+		InterpersonalSkills:      averageInterpersonalSkills,
+		Topics:                   topics,
 		ExceptionalCircumstances: exceptionalCircumstances,
 	}, nil
 

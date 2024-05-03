@@ -22,14 +22,14 @@ type Message struct {
 	CreatedAt  string
 }
 
-func (store *MessageStore) GetRecentMessages(senderId, receiverId string, limit int) ([]Message, error) {
+func (store *MessageStore) GetRecentMessages(user1, user2 string, limit int) ([]Message, error) {
 	rows, err := store.db.Query(
 		`SELECT id, sender_id, receiver_id, message, created_at
 		 FROM messages
-		 WHERE sender_id = ? AND receiver_id = ?
+		 WHERE (sender_id, receiver_id) IN ((?, ?), (?, ?))
 		 ORDER BY created_at DESC
 		 LIMIT ?`,
-		senderId, receiverId, limit)
+		user1, user2, user2, user1, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -48,15 +48,15 @@ func (store *MessageStore) GetRecentMessages(senderId, receiverId string, limit 
 	return userConversations, nil
 }
 
-func (store *MessageStore) GetNewMessages(senderId, receiverId string, after string, limit int) ([]Message, error) {
+func (store *MessageStore) GetNewMessages(user1, user2 string, after string, limit int) ([]Message, error) {
 	rows, err := store.db.Query(
 		`SELECT id, sender_id, receiver_id, message, created_at
 		 FROM messages
-		 WHERE sender_id = ? AND receiver_id = ? AND created_at > datetime(?)
+		 WHERE (sender_id, receiver_id) IN ((?, ?), (?, ?)) AND created_at > datetime(?)
 		 ORDER BY created_at DESC
 		 LIMIT ?
 		 `,
-		senderId, receiverId, after, limit)
+		user1, user2, user2, user1, after, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -86,4 +86,31 @@ func (store *MessageStore) CreateMessage(senderId, receiverId, message string) e
 	}
 
 	return nil
+}
+
+func (store *MessageStore) GetRecentMessagesAllConversations(user string, limit int) ([]Message, error) {
+	rows, err := store.db.Query(
+		`SELECT id, sender_id, receiver_id, message, created_at
+		 FROM messages
+		 WHERE (sender_id = ? AND receiver_id != '00000000-0000-0000-0000-000000000000')
+		 OR (receiver_id = ? AND sender_id != '00000000-0000-0000-0000-000000000000')
+		 ORDER BY created_at DESC
+		 LIMIT ?`,
+		user, user, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	userConversations := []Message{}
+	for rows.Next() {
+		userConversation := Message{}
+		if err := rows.Scan(&userConversation.Id, &userConversation.SenderId,
+			&userConversation.ReceiverId, &userConversation.Message, &userConversation.CreatedAt); err != nil {
+			return nil, err
+		}
+		userConversations = append(userConversations, userConversation)
+	}
+
+	return userConversations, nil
 }

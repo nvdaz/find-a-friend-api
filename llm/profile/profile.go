@@ -2,17 +2,33 @@ package profile
 
 import (
 	"encoding/json"
+	"fmt"
 
+	"github.com/nvdaz/find-a-friend-api/db"
 	"github.com/nvdaz/find-a-friend-api/model"
 )
 
-func GenerateProfile(questions []string) (*model.InternalProfile, error) {
+func GenerateProfile(id string, questions []string, conversations [][]db.Message) (*model.InternalProfile, error) {
 	data, err := json.Marshal(questions)
 	if err != nil {
 		return nil, err
 	}
 
-	intermediateProfile, err := initializeProfile(string(data))
+	simplifiedConversations := make([][]string, 0, len(conversations))
+	for _, conversation := range conversations {
+		simplifiedConversation := make([]string, 0, len(conversation))
+		for _, message := range conversation {
+			simplifiedConversation = append(simplifiedConversation, fmt.Sprintf("%s: %s", message.SenderId, message.Message))
+		}
+		simplifiedConversations = append(simplifiedConversations, simplifiedConversation)
+	}
+
+	conversationData, err := json.Marshal(simplifiedConversations)
+	if err != nil {
+		return nil, err
+	}
+
+	intermediateProfile, err := initializeProfile(id, string(data), string(conversationData))
 	if err != nil {
 		return nil, err
 	}
@@ -39,6 +55,7 @@ func GenerateProfile(questions []string) (*model.InternalProfile, error) {
 		Hobbies:                  intermediateProfile.Hobbies,
 		InterpersonalSkills:      intermediateProfile.InterpersonalSkills,
 		ExceptionalCircumstances: intermediateProfile.ExceptionalCircumstances,
+		Topics:                   intermediateProfile.Topics,
 		Summary:                  features.Summary,
 		Tags:                     features.Tags,
 		Bio:                      features.Bio,

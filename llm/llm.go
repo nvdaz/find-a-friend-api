@@ -70,8 +70,10 @@ func GetResponse(model Model, prompt, system string, temperature *float64) (*str
 			return nil, fmt.Errorf("read message: %w", err)
 		}
 
+		fmt.Println(string(message))
 		var response struct {
 			Result string `json:"result"`
+			Error  string `json:"error"`
 		}
 		if err := json.Unmarshal(message, &response); err != nil {
 			return nil, fmt.Errorf("unmarshal json: %w", err)
@@ -79,6 +81,9 @@ func GetResponse(model Model, prompt, system string, temperature *float64) (*str
 
 		if response.Result != "" {
 			return &response.Result, nil
+		}
+		if response.Error != "" {
+			return nil, fmt.Errorf("response error: %s", response.Error)
 		}
 	}
 }
@@ -98,6 +103,7 @@ func GetResponseJson(result any, model Model, prompt, system string, temperature
 
 		err = unmarshalResponse(result, *response)
 		if err == nil {
+			fmt.Println(result)
 			return nil
 		}
 	}

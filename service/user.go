@@ -77,7 +77,13 @@ func (service *UserService) GetUser(id string) (*model.User, error) {
 		return nil, err
 	}
 
-	profile, err := profile.GenerateProfile(questions)
+	conversations, err := service.messageStore.GetRecentMessagesAllConversations(id, 100)
+	if err != nil {
+		return nil, err
+	}
+	partitionedConversations := partitionConversations(id, conversations)
+
+	profile, err := profile.GenerateProfile(id, questions, partitionedConversations)
 	if err != nil {
 		return nil, err
 	}
@@ -205,4 +211,27 @@ func (service *UserService) GetAgentQuestions(id string, limit int) ([]string, e
 	}
 
 	return questionStrings, nil
+}
+
+func partitionConversations(id string, messages []db.Message) [][]db.Message {
+	conversations := map[string][]db.Message{}
+
+	for _, message := range messages {
+		conversationId := message.SenderId
+		if message.SenderId == id {
+			conversationId = message.ReceiverId
+		}
+
+		if _, ok := conversations[conversationId]; !ok {
+			conversations[conversationId] = []db.Message{}
+		}
+		conversations[conversationId] = append(conversations[conversationId], message)
+	}
+
+	partitions := [][]db.Message{}
+	for _, messages := range conversations {
+		partitions = append(partitions, messages)
+	}
+
+	return partitions
 }
