@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/gorilla/websocket"
 )
@@ -23,11 +24,18 @@ func (model Model) String() string {
 }
 
 func unmarshalResponse(result any, response string) error {
-	if len(response) > 8 && response[:8] == "```json\n" && response[len(response)-3:] == "```" {
-		response = response[8 : len(response)-3]
+	start := strings.Index(response, "{")
+	if start == -1 {
+		return fmt.Errorf("no opening brace found in response")
 	}
 
-	return json.Unmarshal([]byte(response), &result)
+	end := strings.LastIndex(response, "}")
+	if end == -1 {
+		return fmt.Errorf("no closing brace found in response")
+	}
+
+	jsonString := response[start : end+1]
+	return json.Unmarshal([]byte(jsonString), &result)
 }
 
 type promptData struct {
