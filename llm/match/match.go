@@ -37,7 +37,9 @@ func GenerateMatch(user model.User, users []model.User) (*string, error) {
 		}
 
 		group.Go(func() error {
-			sem.Acquire(ctx, 1)
+			if err = sem.Acquire(ctx, 1); err != nil {
+				return err
+			}
 			defer sem.Release(1)
 
 			explanation, err := ExplainMatch(user, *candidateUser)

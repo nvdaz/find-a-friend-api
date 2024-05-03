@@ -48,15 +48,15 @@ func (store *MessageStore) GetRecentMessages(senderId, receiverId string, limit 
 	return userConversations, nil
 }
 
-func (store *MessageStore) GetNewMessages(senderId, receiverId string, after string) ([]Message, error) {
+func (store *MessageStore) GetNewMessages(senderId, receiverId string, after string, limit int) ([]Message, error) {
 	rows, err := store.db.Query(
 		`SELECT id, sender_id, receiver_id, message, created_at
 		 FROM messages
 		 WHERE sender_id = ? AND receiver_id = ? AND created_at > datetime(?)
 		 ORDER BY created_at DESC
-		 LIMIT 100
+		 LIMIT ?
 		 `,
-		senderId, receiverId, after)
+		senderId, receiverId, after, limit)
 	if err != nil {
 		return nil, err
 	}

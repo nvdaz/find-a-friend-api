@@ -14,12 +14,12 @@ func NewMessagesService(messagesStore db.MessageStore, userService UserService) 
 	return MessageService{messagesStore, userService}
 }
 
-func (service *MessageService) GetMessages(senderId, receiverId string) ([]model.Message, error) {
-	sent, err := service.messagesStore.GetRecentMessages(senderId, receiverId, 50)
+func (service *MessageService) GetMessages(senderId, receiverId string, limit int) ([]model.Message, error) {
+	sent, err := service.messagesStore.GetRecentMessages(senderId, receiverId, limit)
 	if err != nil {
 		return nil, err
 	}
-	received, err := service.messagesStore.GetRecentMessages(receiverId, senderId, 50)
+	received, err := service.messagesStore.GetRecentMessages(receiverId, senderId, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -50,12 +50,12 @@ func (service *MessageService) GetMessages(senderId, receiverId string) ([]model
 	return conversation, nil
 }
 
-func (service *MessageService) PollMessages(senderId, receiverId, after string) ([]model.Message, error) {
-	sent, err := service.messagesStore.GetNewMessages(senderId, receiverId, after)
+func (service *MessageService) PollMessages(senderId, receiverId, after string, limit int) ([]model.Message, error) {
+	sent, err := service.messagesStore.GetNewMessages(senderId, receiverId, after, limit)
 	if err != nil {
 		return nil, err
 	}
-	received, err := service.messagesStore.GetNewMessages(receiverId, senderId, after)
+	received, err := service.messagesStore.GetNewMessages(receiverId, senderId, after, limit)
 	if err != nil {
 		return nil, err
 	}

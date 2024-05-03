@@ -149,7 +149,9 @@ func generateUserFeatures(user model.IntermediateProfile, questions string) (*mo
 	var err error
 
 	group.Go(func() error {
-		sem.Acquire(ctx, 1)
+		if err = sem.Acquire(ctx, 1); err != nil {
+			return err
+		}
 		defer sem.Release(1)
 
 		summary, err = generateUserSummary(user)
@@ -157,7 +159,9 @@ func generateUserFeatures(user model.IntermediateProfile, questions string) (*mo
 	})
 
 	group.Go(func() error {
-		sem.Acquire(ctx, 1)
+		if err = sem.Acquire(ctx, 1); err != nil {
+			return err
+		}
 		defer sem.Release(1)
 
 		tags, err = generateUserTags(user)
@@ -165,7 +169,9 @@ func generateUserFeatures(user model.IntermediateProfile, questions string) (*mo
 	})
 
 	group.Go(func() error {
-		sem.Acquire(ctx, 1)
+		if err = sem.Acquire(ctx, 1); err != nil {
+			return err
+		}
 		defer sem.Release(1)
 
 		bio, err = generateUserBio(user)
@@ -173,7 +179,9 @@ func generateUserFeatures(user model.IntermediateProfile, questions string) (*mo
 	})
 
 	group.Go(func() error {
-		sem.Acquire(ctx, 1)
+		if err = sem.Acquire(ctx, 1); err != nil {
+			return err
+		}
 		defer sem.Release(1)
 
 		keyQuestions, err = generateUserKeyQuestions(user, questions)
@@ -181,7 +189,9 @@ func generateUserFeatures(user model.IntermediateProfile, questions string) (*mo
 	})
 
 	group.Go(func() error {
-		sem.Acquire(ctx, 1)
+		if err = sem.Acquire(ctx, 1); err != nil {
+			return err
+		}
 		defer sem.Release(1)
 
 		subtitle, err = generateUserSubtitle(user)
@@ -189,7 +199,9 @@ func generateUserFeatures(user model.IntermediateProfile, questions string) (*mo
 	})
 
 	group.Go(func() error {
-		sem.Acquire(ctx, 1)
+		if err = sem.Acquire(ctx, 1); err != nil {
+			return err
+		}
 		defer sem.Release(1)
 
 		lookingFor, err = generateUserLookingFor(user)

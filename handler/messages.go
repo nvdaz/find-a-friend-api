@@ -40,7 +40,7 @@ func (handler *Handler) GetMessages(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusUnprocessableEntity, "error parsing request body")
 	}
 
-	messages, err := handler.messageService.GetMessages(request.UserId, request.OtherId)
+	messages, err := handler.messageService.GetMessages(request.UserId, request.OtherId, 50)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "error getting messages")
@@ -61,7 +61,7 @@ func (handler *Handler) PollMessages(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusUnprocessableEntity, "error parsing request body")
 	}
 
-	messages, err := handler.messageService.PollMessages(request.UserId, request.OtherId, request.After)
+	messages, err := handler.messageService.PollMessages(request.UserId, request.OtherId, request.After, 10)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "error polling messages")

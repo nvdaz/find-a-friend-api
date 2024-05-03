@@ -39,7 +39,7 @@ func initializeInterests(questions string) ([]model.Interest, error) {
 }
 
 func initializePersonality(questions string) (model.Personality, error) {
-	system := "Assess the user's preliminary personality based on the Big Five (OCEAN) model, assigning scores from 0 to 5 for each trait, where 0 means the trait is not present and 5 signifies a strong presence. If it is not possible to determine a trait, provide an average value. List the scores for Openness, Conscientiousness, Extraversion, Agreeableness, and Neuroticism. These scores are only preliminary and need not be perfectly accurate. Provide a JSON object without any formatting containing the keys 'openness', 'conscientiousness', 'extraversion', 'agreeableness', and 'neuroticism'."
+	system := "Assess the user's preliminary personality based on the Big Five (OCEAN) model, assigning scores from 0 to 5 for each trait, where 0 means the trait is not present and 5 signifies a strong presence. If it is not possible to determine a trait, provide an average value. List the scores for Openness, Conscientiousness, Extroersion, Agreeableness, and Neuroticism. These scores are only preliminary and need not be perfectly accurate. Provide a JSON object without any formatting containing the keys 'openness', 'conscientiousness', 'extroversion', 'agreeableness', and 'neuroticism'."
 
 	result := model.Personality{}
 	if err := llm.GetResponseJson(&result, llm.ModelGpt4, questions, system, nil); err != nil {
@@ -197,77 +197,99 @@ func initializeProfile(questions string) (*model.IntermediateProfile, error) {
 	var err error
 
 	group.Go(func() error {
-		sem.Acquire(ctx, 1)
+		if err = sem.Acquire(ctx, 1); err != nil {
+			return err
+		}
 		defer sem.Release(1)
 		interests, err = initializeInterests(questions)
 		return err
 	})
 
 	group.Go(func() error {
-		sem.Acquire(ctx, 1)
+		if err = sem.Acquire(ctx, 1); err != nil {
+			return err
+		}
 		defer sem.Release(1)
 		personality, err = initializePersonality(questions)
 		return err
 	})
 
 	group.Go(func() error {
-		sem.Acquire(ctx, 1)
+		if err = sem.Acquire(ctx, 1); err != nil {
+			return err
+		}
 		defer sem.Release(1)
 		skills, err = initializeSkills(questions)
 		return err
 	})
 
 	group.Go(func() error {
-		sem.Acquire(ctx, 1)
+		if err = sem.Acquire(ctx, 1); err != nil {
+			return err
+		}
 		defer sem.Release(1)
 		goals, err = initializeGoals(questions)
 		return err
 	})
 
 	group.Go(func() error {
-		sem.Acquire(ctx, 1)
+		if err = sem.Acquire(ctx, 1); err != nil {
+			return err
+		}
 		defer sem.Release(1)
 		values, err = initializeValues(questions)
 		return err
 	})
 
 	group.Go(func() error {
-		sem.Acquire(ctx, 1)
+		if err = sem.Acquire(ctx, 1); err != nil {
+			return err
+		}
 		defer sem.Release(1)
 		demographics, err = initializeDemographics(questions)
 		return err
 	})
 
 	group.Go(func() error {
-		sem.Acquire(ctx, 1)
+		if err = sem.Acquire(ctx, 1); err != nil {
+			return err
+		}
 		defer sem.Release(1)
 		livedExperiences, err = initializeLivedExperiences(questions)
 		return err
 	})
 
 	group.Go(func() error {
-		sem.Acquire(ctx, 1)
+		if err = sem.Acquire(ctx, 1); err != nil {
+			return err
+		}
 		defer sem.Release(1)
 		habits, err = initializeHabits(questions)
 		return err
 	})
 
 	group.Go(func() error {
-		sem.Acquire(ctx, 1)
+		if err = sem.Acquire(ctx, 1); err != nil {
+			return err
+		}
 		defer sem.Release(1)
 		interpersonalSkills, err = initializeInterpersonalSkills(questions)
 		return err
 	})
 
 	group.Go(func() error {
-		sem.Acquire(ctx, 1)
+		if err = sem.Acquire(ctx, 1); err != nil {
+			return err
+		}
 		defer sem.Release(1)
 		hobbies, err = initializeHobbies(questions)
 		return err
 	})
 
 	group.Go(func() error {
-		sem.Acquire(ctx, 1)
+		if err = sem.Acquire(ctx, 1); err != nil {
+			return err
+		}
 		defer sem.Release(1)
 		exceptionalCircumstances, err = initializeExceptionalCircumstances(questions)
 		return err

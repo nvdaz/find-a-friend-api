@@ -29,3 +29,7 @@ CREATE TABLE IF NOT EXISTS `messages` (
     CONSTRAINT `fk_sender_id` FOREIGN KEY (`sender_id`) REFERENCES `users`(`id`),
     CONSTRAINT `fk_receiver_id` FOREIGN KEY (`receiver_id`) REFERENCES `users`(`id`)
 );
+CREATE INDEX idx_sender_id ON messages (sender_id);
+CREATE INDEX idx_receiver_id ON messages (receiver_id);
+CREATE INDEX idx_created_at ON messages (created_at);
+CREATE INDEX idx_sender_receiver_created_at ON messages (sender_id, receiver_id, created_at);
