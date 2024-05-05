@@ -185,8 +185,6 @@ func (service *UserService) LoginUser(loginUser LoginUser) (*model.User, error) 
 		json.Unmarshal([]byte(*user.Profile), profile)
 	}
 
-	fmt.Println("Profile", *user.Profile)
-
 	return &model.User{
 		Id:      user.Id,
 		Name:    user.Name,
