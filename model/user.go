@@ -75,6 +75,7 @@ type IntermediateProfile struct {
 type Demographics struct {
 	AgeRange             string   `json:"age_range"`
 	Gender               string   `json:"gender"`
+	Location             string   `json:"location"`
 	Occupation           string   `json:"occupation"`
 	HighestEducation     string   `json:"highest_education"`
 	LivingStatus         string   `json:"living_status"`

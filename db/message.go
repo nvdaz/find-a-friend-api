@@ -22,6 +22,32 @@ type Message struct {
 	CreatedAt  string
 }
 
+func (store *MessageStore) GetRecentSentMessages(sender, receiver string, limit int) ([]Message, error) {
+	rows, err := store.db.Query(
+		`SELECT id, sender_id, receiver_id, message, created_at
+		 FROM messages
+		 WHERE sender_id = ? AND receiver_id = ?
+		 ORDER BY created_at DESC
+		 LIMIT ?`,
+		sender, receiver, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	userConversations := []Message{}
+	for rows.Next() {
+		userConversation := Message{}
+		if err := rows.Scan(&userConversation.Id, &userConversation.SenderId,
+			&userConversation.ReceiverId, &userConversation.Message, &userConversation.CreatedAt); err != nil {
+			return nil, err
+		}
+		userConversations = append(userConversations, userConversation)
+	}
+
+	return userConversations, nil
+}
+
 func (store *MessageStore) GetRecentMessages(user1, user2 string, limit int) ([]Message, error) {
 	rows, err := store.db.Query(
 		`SELECT id, sender_id, receiver_id, message, created_at

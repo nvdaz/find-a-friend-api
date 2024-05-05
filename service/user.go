@@ -72,12 +72,12 @@ func (service *UserService) GetUser(id string) (*model.User, error) {
 		}, nil
 	}
 
-	questions, err := service.GetAgentQuestions(id, 100)
+	questions, err := service.GetAgentQuestions(id, 60)
 	if err != nil {
 		return nil, err
 	}
 
-	conversations, err := service.messageStore.GetRecentMessagesAllConversations(id, 100)
+	conversations, err := service.messageStore.GetRecentMessagesAllConversations(id, 60)
 	if err != nil {
 		return nil, err
 	}
@@ -200,7 +200,7 @@ func (service *UserService) UpdateAvatar(id, avatar string) error {
 }
 
 func (service *UserService) GetAgentQuestions(id string, limit int) ([]string, error) {
-	questions, err := service.messageStore.GetRecentMessages(id, "00000000-0000-0000-0000-000000000000", limit)
+	questions, err := service.messageStore.GetRecentSentMessages(id, "00000000-0000-0000-0000-000000000000", limit)
 	if err != nil {
 		return nil, err
 	}

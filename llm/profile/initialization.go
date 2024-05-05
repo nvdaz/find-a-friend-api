@@ -39,7 +39,7 @@ func initializeInterests(questions string) ([]model.Interest, error) {
 }
 
 func initializePersonality(questions string) (model.Personality, error) {
-	system := "Assess the user's preliminary personality based on the Big Five (OCEAN) model, assigning scores from 0 to 5 for each trait, where 0 means the trait is not present and 5 signifies a strong presence. If it is not possible to determine a trait, provide an average value. List the scores for Openness, Conscientiousness, Extroersion, Agreeableness, and Neuroticism. These scores are only preliminary and need not be perfectly accurate. Provide a JSON object without any formatting containing the keys 'openness', 'conscientiousness', 'extroversion', 'agreeableness', and 'neuroticism'. Start with an in-depth analysis of the user's queries in an 'analysis' key."
+	system := "Let us play a guessing game. You are provided with a list of questions the user asked a chat bot. Guess the user's personality based on the Big Five (OCEAN) model, assigning scores from 0 to 5 for each trait, where 0 means the trait is not present and 5 signifies a strong presence. List the scores for Openness, Conscientiousness, Extroersion, Agreeableness, and Neuroticism. Start with analysis and use deductive reasoning to answer as precisely as possible. Then provide a JSON object in a JSON code block containing the keys 'openness', 'conscientiousness', 'extroversion', 'agreeableness', and 'neuroticism'."
 
 	result := model.Personality{}
 	if err := llm.GetResponseJson(&result, llm.ModelClaudeSonnet, questions, system, nil); err != nil {
@@ -67,7 +67,7 @@ func initializeSkills(questions string) ([]model.Skill, error) {
 }
 
 func initializeGoals(questions string) ([]model.Goal, error) {
-	system := fmt.Sprintf("Create a list of ambitions and goals that the user has based on the provided chatbot questions. The list should contain %d specific goals. Describe goals in terse terms. Provide a JSON object without any formatting containing the key 'goals', with the value being the list of goals. Each goal should be an object with a key 'goal' containing the goal and a key 'importance' containing the importance to the user on a scale from 0 to 1.", UserGoalsCount)
+	system := fmt.Sprintf("Let us play a guessing game. You are provided a list of chatbot questions a user asked. Guess the ambitions and goals that the user has. The list should contain %d specific goals. Describe goals in terse terms. Start with analysis and use deductive reasoning to answer as precisely as possible. Provide a JSON object containing the key 'goals', with the value being the list of goals. Each goal should be an object with a key 'goal' containing the goal and a key 'importance' containing the importance to the user on a scale from 0 to 1.", UserGoalsCount)
 
 	result := struct {
 		Goals []model.Goal `json:"goals"`
@@ -84,7 +84,7 @@ func initializeGoals(questions string) ([]model.Goal, error) {
 }
 
 func initializeValues(questions string) ([]model.CoreValue, error) {
-	system := fmt.Sprintf("Create a list of the user's values and worldviews based on the provided chatbot questions. The list should contain %d specific values. Provide a JSON object without any formatting containing the key 'core_values', with the value being the list of values. Each value should be an object with a key 'value' containing the specific value and a key 'importance' containing the importance to the user on a scale from 0 to 1. Start with an in-depth analysis of the user's queries in an 'analysis' key.", UserValuesCount)
+	system := fmt.Sprintf("Create a list of the user's values and worldviews based on the provided chatbot questions. The list should contain %d specific values. Provide a JSON object in a JSON code block containing the key 'core_values', with the value being the list of values. Each value should be an object with a key 'value' containing the specific value and a key 'importance' containing the importance to the user on a scale from 0 to 1. Start with an in-depth analysis of the user's queries in an 'analysis' key.", UserValuesCount)
 
 	result := struct {
 		Values []model.CoreValue `json:"core_values"`
@@ -102,7 +102,7 @@ func initializeValues(questions string) ([]model.CoreValue, error) {
 }
 
 func initializeDemographics(questions string) (model.Demographics, error) {
-	system := "Analyze user-asked questions to deduce their demographic profile. Provide a valid JSON object without formatting, with keys 'age_range', 'gender', 'occupation', 'highest_education', 'living_status', 'political_affiliation', 'religious_affiliation', 'nationality', 'spoken_languages' (list), and 'social_class'. Start with an in-depth analysis of the user's queries in an 'analysis' key. Never reply with uncertainty; always provide a best answer."
+	system := "Let us play a guessing game. You are provided with a list of questions a user asked to a chatbot. Your task is to guess the user's demographic profile. Start with analysis and use deductive reasoning to answer as precisely as possible. Then, provide a valid JSON object in a JSON code block, with keys 'age', 'gender', 'location', 'occupation', 'highest_education', 'living_status', 'political_affiliation', 'religious_affiliation', 'nationality', 'spoken_languages' (list), and 'social_class'. Never reply with uncertainty; this is a game of deduction and analysis. Always provide a complete profile."
 	result := model.Demographics{}
 	if err := llm.GetResponseJson(&result, llm.ModelClaudeSonnet, questions, system, nil); err != nil {
 		return model.Demographics{}, err
@@ -152,7 +152,7 @@ func initializeHobbies(questions string) ([]string, error) {
 }
 
 func initializeInterpersonalSkills(questions string) (model.InterpersonalSkills, error) {
-	system := "Analyze the user's responses to determine their interpersonal skills. Provide a JSON object without any formatting containing the keys 'active_listening', 'teamwork', 'responsibility', 'dependability', 'leadership', 'motivation', 'flexibility', 'patience', and 'empathy'. Each key should have a value between 0 and 1, representing the strength of the skill. Start with an in-depth analysis of the user's queries in an 'analysis' key. "
+	system := "Let us play a guessing game. You are provided with a list of questions a user asked to a chat bot. Guess their interpersonal skills. Start with analysis and use deductive reasoning to answer as precisely as possible. Then, provide a JSON object without any formatting containing the keys 'active_listening', 'teamwork', 'responsibility', 'dependability', 'leadership', 'motivation', 'flexibility', 'patience', and 'empathy'. Each key should have a value between 0 and 1, representing the strength of the skill."
 
 	result := model.InterpersonalSkills{}
 	if err := llm.GetResponseJson(&result, llm.ModelClaudeSonnet, questions, system, nil); err != nil {
