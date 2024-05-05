@@ -112,7 +112,7 @@ func initializeDemographics(questions string) (model.Demographics, error) {
 }
 
 func initializeLivedExperiences(questions string) ([]string, error) {
-	system := fmt.Sprintf("Create a list of %d specific lived experiences based on the provided chatbot questions. Provide a JSON object without any formatting containing the key 'lived_experiences', with the value being the list of experiences.", UserExperiencesCount)
+	system := fmt.Sprintf("You are provided a list of questions a user asked to a chatbot. Create a list of %d specific lived experiences the user has had. Provide a JSON object without any formatting containing the key 'lived_experiences', with the value being the list of experiences.", UserExperiencesCount)
 
 	result := struct {
 		LivedExperiences []string `json:"lived_experiences"`
